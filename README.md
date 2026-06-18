@@ -1,3 +1,13 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub release](https://img.shields.io/github/release/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/releases)
+![GitHub repo size](https://img.shields.io/github/repo-size/myTselection/Wallet-Assistant.svg)
+
+[![GitHub issues](https://img.shields.io/github/issues/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/commits/main)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/graphs/commit-activity)
+
+
+
 ## Wallet-Assistant - Loyalty cards, vouchers and shop promo's - Home Assistant Custom Integration 
 
 A Home Assistant custom integration (HACS) that makes it easy to manage loyalty cards, vouchers, and store promotions directly within Home Assistant.
@@ -12,7 +22,9 @@ A Home Assistant custom integration (HACS) that makes it easy to manage loyalty 
 
 </details>
 
-So I started with the Card Wallet code and extended it:
+So I started with the Card Wallet code and extended it
+
+## ⭐ Features
 
 * Single custom HACS integration installation
 * UI cover flow setup of the integration
@@ -31,6 +43,8 @@ So I started with the Card Wallet code and extended it:
   * Easy direct filter cards while typing to quickly retrieve the needed card
   * See expiry dates
   * Sensor with number of cards that will expire soon
+
+## 📷 Screenshots
 
 ## 🙏 Credits
 
