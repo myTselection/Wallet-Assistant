@@ -1,5 +1,4 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg?style=flat-square)](https://my.home-assistant.io/redirect/hacs_repository/?owner=myTselection&repository=Wallet-Assistant&category=integration)
 [![GitHub release](https://img.shields.io/github/release/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/releases)
 ![GitHub repo size](https://img.shields.io/github/repo-size/myTselection/Wallet-Assistant.svg)
 
