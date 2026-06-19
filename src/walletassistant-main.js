@@ -70,6 +70,24 @@ function getTypeLabel(item) {
   return TYPE_LABELS[getItemType(item)] || "Item";
 }
 
+function compareItemsByName(a, b) {
+  return String(a?.name || "").localeCompare(String(b?.name || ""), undefined, {
+    numeric: true,
+    sensitivity: "base"
+  });
+}
+
+function getExpiryTime(item) {
+  if (!item?.expires_on) return Number.POSITIVE_INFINITY;
+  const time = new Date(`${item.expires_on}T00:00:00`).getTime();
+  return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+}
+
+function compareItemsByExpiryThenName(a, b) {
+  const expiryDiff = getExpiryTime(a) - getExpiryTime(b);
+  return expiryDiff || compareItemsByName(a, b);
+}
+
 function normalizeDefaultView(value) {
   return CODE_VIEWS.has(value) ? value : DEFAULT_VIEW;
 }
@@ -519,6 +537,9 @@ class WalletAssistantCard extends HTMLElement {
           getTypeLabel(card).toLowerCase().includes(filter)
         )
       : typedCards;
+    const sortedCards = [...filteredCards].sort(
+      this.activeType === "voucher" ? compareItemsByExpiryThenName : compareItemsByName
+    );
 
     const filterInput = this.toolbarContainer.querySelector("#filter");
     const toggleViewButton = this.toolbarContainer.querySelector("#toggle-card-view");
@@ -544,7 +565,7 @@ class WalletAssistantCard extends HTMLElement {
 
     this.dynamicContainer.innerHTML = `
       <div class="cardlist ${this.cardViewMode === "grid" ? "grid-view" : "list-view"}">
-        ${filteredCards.length ? filteredCards.map(card => {
+        ${sortedCards.length ? sortedCards.map(card => {
           const logoUrl = getLogoUrl(card.logo_slug, 64);
           const initial = getCardInitial(card.name);
           const typeLabel = getTypeLabel(card);
