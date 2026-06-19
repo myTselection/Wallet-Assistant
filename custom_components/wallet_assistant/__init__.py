@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_URL
+from homeassistant.const import CONF_ID, CONF_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -95,7 +95,29 @@ async def _async_register_lovelace_resource(hass: HomeAssistant) -> None:
         await resources.async_get_info()
 
     resource_items = resources.async_items() or []
-    if any(_normalize_resource_url(item.get(CONF_URL, "")) == FRONTEND_PATH for item in resource_items):
+    for item in resource_items:
+        if _normalize_resource_url(item.get(CONF_URL, "")) != FRONTEND_PATH:
+            continue
+
+        if item.get(CONF_URL) == resource_url:
+            return
+
+        if not hasattr(resources, "async_update_item") or CONF_ID not in item:
+            _LOGGER.warning(
+                "Wallet Assistant dashboard resource exists but could not be updated; "
+                "set %s manually as a module resource",
+                resource_url,
+            )
+            return
+
+        await resources.async_update_item(
+            item[CONF_ID],
+            {
+                CONF_RESOURCE_TYPE_WS: "module",
+                CONF_URL: resource_url,
+            },
+        )
+        _LOGGER.info("Updated Wallet Assistant dashboard resource: %s", resource_url)
         return
 
     if not hasattr(resources, "async_create_item"):

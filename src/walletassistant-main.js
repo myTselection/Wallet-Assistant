@@ -648,4 +648,6 @@ class WalletAssistantCard extends HTMLElement {
   }
 }
 
-customElements.define(CARD_TYPE, WalletAssistantCard);
+if (!customElements.get(CARD_TYPE)) {
+  customElements.define(CARD_TYPE, WalletAssistantCard);
+}
