@@ -127,6 +127,9 @@ button ha-icon {
 .cardlist.grid-view {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-content: start;
+	align-items: start;
+	grid-auto-rows: min-content;
 	gap: 8px;
 }
 
