@@ -6,6 +6,7 @@ from pathlib import Path
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_URL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.setup import async_setup_component
 
 try:
@@ -30,6 +31,8 @@ from .const import DOMAIN, FRONTEND_PATH, PLATFORMS, VERSION
 from .services.storage import WalletStorage
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
