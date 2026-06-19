@@ -113,8 +113,37 @@ function normalizeItem(item) {
     format: item.format || "CODE128",
     default_view: normalizeDefaultView(item.default_view),
     code: item.code || "",
-    expires_on: item.expires_on || ""
+    expires_on: item.expires_on || "",
+    notes: item.notes || ""
   };
+}
+
+function getCameraScanErrorMessage(error = null) {
+  const protocol = window.location?.protocol || "";
+  const hostname = window.location?.hostname || "";
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+
+  if (window.isSecureContext === false && protocol === "http:" && !isLocalhost) {
+    return "Camera scanning requires a secure connection. Open Home Assistant with HTTPS, use the Home Assistant companion app, or access it from localhost.";
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return "Camera scanning is not available in this browser or webview. Try HTTPS or the Home Assistant companion app.";
+  }
+
+  if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") {
+    return "Camera permission was denied. Allow camera access for this site and try again.";
+  }
+
+  if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
+    return "No camera was found on this device.";
+  }
+
+  if (error?.name === "NotReadableError" || error?.name === "TrackStartError") {
+    return "The camera is already in use by another app or browser tab.";
+  }
+
+  return error?.message || "Unable to start the camera scanner.";
 }
 
 function renderBarcodeCentral(target, code, fmt, opts = {}, errorTarget = null) {
@@ -165,7 +194,7 @@ class WalletAssistantCard extends HTMLElement {
     this.filtersEnabled = false;
     this.activeOwner = "all";
     this.activeType = "all";
-    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
+    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "", notes: "" };
 
     this.toolbarContainer = document.createElement("div");
     this.toolbarContainer.className = "toolbar";
@@ -290,13 +319,15 @@ class WalletAssistantCard extends HTMLElement {
     const logoSlugEl = this.shadowRoot.getElementById("add-logo-slug") || this.shadowRoot.getElementById("logo-slug");
     const typeEl = this.shadowRoot.getElementById("add-type");
     const expiresEl = this.shadowRoot.getElementById("add-expires-on");
+    const notesEl = this.shadowRoot.getElementById("add-notes");
     const activeId = this.shadowRoot.activeElement?.id || document.activeElement?.id;
-    if (nameEl || codeEl || logoSlugEl || typeEl || expiresEl) {
+    if (nameEl || codeEl || logoSlugEl || typeEl || expiresEl || notesEl) {
       this._inputState.name = nameEl?.value || "";
       this._inputState.code = codeEl?.value || "";
       this._inputState.logo_slug = logoSlugEl?.value || "";
       this._inputState.item_type = typeEl?.value || "loyalty";
       this._inputState.expires_on = expiresEl?.value || "";
+      this._inputState.notes = notesEl?.value || "";
       this._inputState.focusId = activeId;
     }
 
@@ -373,11 +404,13 @@ class WalletAssistantCard extends HTMLElement {
     const logoSlugEl = this.shadowRoot.getElementById("add-logo-slug") || this.shadowRoot.getElementById("logo-slug");
     const typeEl = this.shadowRoot.getElementById("add-type");
     const expiresEl = this.shadowRoot.getElementById("add-expires-on");
+    const notesEl = this.shadowRoot.getElementById("add-notes");
     const name = nameEl?.value?.trim();
     const code = codeEl?.value?.trim();
     const logoSlug = logoSlugEl?.value?.trim() || "";
     const itemType = typeEl?.value || "loyalty";
     const expiresOn = expiresEl?.value || "";
+    const notes = notesEl?.value?.trim() || "";
     if (!name || !code) return alert("Missing fields");
     await this._hass.callApi("post", API_PATH, {
       name,
@@ -387,16 +420,18 @@ class WalletAssistantCard extends HTMLElement {
       user_id: this._hass.user.id,
       item_type: itemType,
       expires_on: itemType === "voucher" ? expiresOn : "",
+      notes,
       format: "CODE128", // default for new cards
       default_view: DEFAULT_VIEW
     });
 
-    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
+    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "", notes: "" };
     if (nameEl) nameEl.value = "";
     if (codeEl) codeEl.value = "";
     if (logoSlugEl) logoSlugEl.value = "";
     if (typeEl) typeEl.value = "loyalty";
     if (expiresEl) expiresEl.value = "";
+    if (notesEl) notesEl.value = "";
     this.showAddDialog = false;
     await this.loadCards({ force: true });
   }
@@ -417,7 +452,7 @@ class WalletAssistantCard extends HTMLElement {
   async scanBarcodeIntoInput(input, onValue = null) {
     if (!input) return;
     if (!navigator.mediaDevices?.getUserMedia) {
-      alert("Camera scanning is not available in this browser.");
+      alert(getCameraScanErrorMessage());
       return;
     }
 
@@ -466,7 +501,8 @@ class WalletAssistantCard extends HTMLElement {
         }
       });
     } catch (error) {
-      status.textContent = error?.message || "Unable to start camera.";
+      status.textContent = getCameraScanErrorMessage(error);
+      status.classList.add("error");
     }
   }
 
@@ -499,6 +535,7 @@ class WalletAssistantCard extends HTMLElement {
           </div>
           <input id="edit-logo-slug" type="text" value="${escapeHtml(card.logo_slug || "")}" placeholder="Logo.dev slug (optional)" />
           <input id="edit-expires-on" type="date" value="${escapeHtml(card.expires_on || "")}" title="Expiry date" aria-label="Expiry date" />
+          <textarea id="edit-notes" rows="3" placeholder="Note (optional)">${escapeHtml(card.notes || "")}</textarea>
           <select id="edit-format" title="Default barcode format" aria-label="Default barcode format">
             ${supportedFormats
               .map(
@@ -525,12 +562,13 @@ class WalletAssistantCard extends HTMLElement {
     // inline style (kept same as before)
     dialog.style.cssText = `
       position: fixed; top:0; left:0; right:0; bottom:0;
+      padding:16px; box-sizing:border-box;
       background:rgba(0,0,0,0.4);
       display:flex; align-items:center; justify-content:center;
       z-index:1000;
     `;
     dialog.querySelector(".dialog-content").style.cssText = `
-      background:#fff; padding:1em; border-radius:8px; width:320px; max-width:90vw;
+      background:#fff; padding:1em; border-radius:8px; width:min(320px, calc(100vw - 32px)); max-width:calc(100vw - 32px); box-sizing:border-box;
       display:flex; flex-direction:column; gap:0.5em;
     `;
 
@@ -541,6 +579,7 @@ class WalletAssistantCard extends HTMLElement {
     const logoSlugInput = dialog.querySelector("#edit-logo-slug");
     const typeSelect = dialog.querySelector("#edit-type");
     const expiresInput = dialog.querySelector("#edit-expires-on");
+    const notesInput = dialog.querySelector("#edit-notes");
     const formatSelect = dialog.querySelector("#edit-format");
     const previewCanvas = dialog.querySelector("#preview-canvas");
     const errorDiv = dialog.querySelector("#preview-error");
@@ -570,6 +609,7 @@ class WalletAssistantCard extends HTMLElement {
       const newLogoSlug = logoSlugInput.value.trim();
       const newType = typeSelect.value;
       const newExpiresOn = expiresInput.value;
+      const newNotes = notesInput.value.trim();
       const newFormat = formatSelect.value;
 
       const updated = await this._hass.callApi("put", `${API_PATH}/${getItemId(card)}`, {
@@ -579,6 +619,7 @@ class WalletAssistantCard extends HTMLElement {
         logo_slug: newLogoSlug,
         item_type: newType,
         expires_on: newType === "voucher" ? newExpiresOn : "",
+        notes: newNotes,
         format: newFormat
       });
       const updatedCard = {
@@ -587,6 +628,7 @@ class WalletAssistantCard extends HTMLElement {
         logo_slug: newLogoSlug,
         item_type: newType,
         expires_on: newType === "voucher" ? newExpiresOn : "",
+        notes: newNotes,
         format: newFormat,
         ...(updated || {})
       };
@@ -646,6 +688,7 @@ class WalletAssistantCard extends HTMLElement {
       ? typedCards.filter(card =>
           card.name.toLowerCase().includes(filter) ||
           String(card.owner || "").toLowerCase().includes(filter) ||
+          String(card.notes || "").toLowerCase().includes(filter) ||
           getTypeLabel(card).toLowerCase().includes(filter)
         )
       : typedCards;
@@ -686,6 +729,7 @@ class WalletAssistantCard extends HTMLElement {
     const selectedLogoUrl = this.selectedCard ? getLogoUrl(this.selectedCard.logo_slug, 96) : "";
     const selectedInitial = this.selectedCard ? getCardInitial(this.selectedCard.name) : "";
     const selectedExpiry = this.selectedCard?.expires_on ? formatExpiry(this.selectedCard.expires_on) : "";
+    const selectedNotes = this.selectedCard?.notes || "";
 
     this.dynamicContainer.innerHTML = `
       <div class="cardlist ${this.cardViewMode === "grid" ? "grid-view" : "list-view"}">
@@ -728,6 +772,7 @@ class WalletAssistantCard extends HTMLElement {
               <span>${escapeHtml(getTypeLabel(this.selectedCard))}</span>
               ${selectedExpiry ? `<span><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(selectedExpiry)}</span>` : ""}
             </div>
+            ${selectedNotes ? `<div class="popup-note">${escapeHtml(selectedNotes)}</div>` : ""}
             <div class="code" id="code-preview"></div>
             <div class="button-group">
               <button id="toggle-code"><ha-icon icon="mdi:cached"></ha-icon> QR/Barcode</button>
@@ -756,6 +801,7 @@ class WalletAssistantCard extends HTMLElement {
               </div>
               <input id="add-logo-slug" placeholder="Logo.dev slug (optional)" value="${escapeHtml(this._inputState.logo_slug || "")}" />
               <input id="add-expires-on" type="date" value="${escapeHtml(this._inputState.expires_on || "")}" />
+              <textarea id="add-notes" rows="3" placeholder="Note (optional)">${escapeHtml(this._inputState.notes || "")}</textarea>
               <div class="btn-row">
                 <button type="submit" id="save-btn"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
                 <button type="button" id="cancel-add-btn"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
@@ -792,6 +838,7 @@ class WalletAssistantCard extends HTMLElement {
       const addLogoSlug = this.shadowRoot.getElementById("add-logo-slug");
       const addType = this.shadowRoot.getElementById("add-type");
       const addExpiresOn = this.shadowRoot.getElementById("add-expires-on");
+      const addNotes = this.shadowRoot.getElementById("add-notes");
       addName?.addEventListener("input", (event) => { this._inputState.name = event.target.value; });
       addCode?.addEventListener("input", (event) => { this._inputState.code = event.target.value; });
       this.dynamicContainer.querySelector("#scan-add-code")
@@ -799,6 +846,7 @@ class WalletAssistantCard extends HTMLElement {
       addLogoSlug?.addEventListener("input", (event) => { this._inputState.logo_slug = event.target.value; });
       addType?.addEventListener("change", (event) => { this._inputState.item_type = event.target.value; });
       addExpiresOn?.addEventListener("input", (event) => { this._inputState.expires_on = event.target.value; });
+      addNotes?.addEventListener("input", (event) => { this._inputState.notes = event.target.value; });
     }
 
     if (this.selectedCard) {

@@ -371,6 +371,15 @@ button ha-icon {
 	gap: 3px;
 }
 
+.popup-note {
+	margin-top: 10px;
+	color: #333;
+	font-size: 0.95em;
+	line-height: 1.35;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
 .popup .code {
 	margin-top: 12px;
 	display: flex;
@@ -419,11 +428,13 @@ ha-icon {
 	left: 0;
 	right: 0;
 	bottom: 0;
+	padding: 16px;
 	background: rgba(0, 0, 0, 0.45);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	z-index: 1000;
+	box-sizing: border-box;
 }
 
 .dialog-content {
@@ -431,7 +442,9 @@ ha-icon {
 	padding: 1.2em;
 	border-radius: 10px;
 	max-width: 360px;
-	width: 100%;
+	width: min(360px, calc(100vw - 32px));
+	max-height: calc(100vh - 32px);
+	overflow-y: auto;
 	box-sizing: border-box;
 	box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
 }
@@ -475,27 +488,41 @@ ha-icon {
 	text-align: center;
 }
 
+#scanner-status.error {
+	color: #b00020;
+}
+
 .popup-form {
 	display: flex;
 	flex-direction: column;
 	gap: 0.8em;
+	min-width: 0;
 }
 
 .popup-form input,
-.popup-form select {
+.popup-form select,
+.popup-form textarea {
 	width: 100%;
+	min-width: 0;
 	padding: 10px;
 	border: 1px solid #ccc;
 	border-radius: 8px;
 	box-sizing: border-box;
 	background: #fff;
 	color: #111;
+	font: inherit;
+}
+
+.popup-form textarea {
+	min-height: 84px;
+	resize: vertical;
 }
 
 .btn-row {
 	display: flex;
 	justify-content: flex-end;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
 }
 
