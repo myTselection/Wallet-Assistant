@@ -1,4 +1,5 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg?style=flat-square)](https://my.home-assistant.io/redirect/hacs_repository/?owner=myTselection&repository=Wallet-Assistant&category=integration)
 [![GitHub release](https://img.shields.io/github/release/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/releases)
 ![GitHub repo size](https://img.shields.io/github/repo-size/myTselection/Wallet-Assistant.svg)
 
@@ -45,21 +46,18 @@ So I started with the Card Wallet code and extended it.
 
 ## Installation
 
-1. Add this repository to HACS as a custom integration repository.
+[![Open your Home Assistant instance and add this repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg?style=flat-square)](https://my.home-assistant.io/redirect/hacs_repository/?owner=myTselection&repository=Wallet-Assistant&category=integration)
+
+1. Open the HACS repository link above, or add `myTselection/Wallet-Assistant` manually as a custom HACS integration repository.
 2. Install **Wallet Assistant** from HACS and restart Home Assistant.
 3. Add **Wallet Assistant** from **Settings > Devices & services > Add integration**.
-4. Add the dashboard resource:
-
-```yaml
-url: /wallet_assistant_static/wallet-assistant-card.js
-type: module
-```
-
-5. Add a manual Lovelace card:
+4. Add a manual Lovelace card:
 
 ```yaml
 type: custom:wallet-assistant-card
 ```
+
+The integration automatically registers the bundled dashboard resource in Lovelace storage mode, so no manual dashboard resource entry is needed.
 
 ## Storage
 
@@ -67,7 +65,7 @@ Wallet Assistant stores items in `wallet_assistant_items.json` in the Home Assis
 
 ## Dashboard Resource
 
-The dashboard card is built into `custom_components/wallet_assistant/frontend/wallet-assistant-card.js` and served by the integration at `/wallet_assistant_static/wallet-assistant-card.js`, so the backend and dashboard can be installed from a single HACS repository.
+The dashboard card is built into `custom_components/wallet_assistant/frontend/wallet-assistant-card.js`, served by the integration at `/wallet_assistant_static/wallet-assistant-card.js`, and automatically registered as a Lovelace module resource.
 
 ## 📷 Screenshots
 
