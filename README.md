@@ -6,6 +6,10 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/commits/main)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/myTselection/Wallet-Assistant.svg)](https://github.com/myTselection/Wallet-Assistant/graphs/commit-activity)
 
+<p align="center">
+  <img src="custom_components/wallet_assistant/brand/logo.png" alt="Wallet Assistant" width="720">
+</p>
+
 ## Wallet Assistant - Loyalty cards, vouchers and shop promotions - Home Assistant Custom Integration
 
 A combined Home Assistant custom integration and Lovelace dashboard card that makes it easy to manage loyalty cards, vouchers, and store promotions directly within Home Assistant.
