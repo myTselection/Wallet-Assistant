@@ -1,13 +1,13 @@
 {
   "domain": "wallet_assistant",
   "name": "Wallet Assistant",
-  "version": "1.1.1",
-  "documentation": "https://github.com/myTselection/Wallet-Assistant",
-  "issue_tracker": "https://github.com/myTselection/Wallet-Assistant/issues",
-  "dependencies": [ "http" ],
   "after_dependencies": [ "lovelace" ],
   "codeowners": [ "@myTselection" ],
-  "requirements": [],
   "config_flow": true,
-  "iot_class": "local_push"
+  "dependencies": [ "http" ],
+  "documentation": "https://github.com/myTselection/Wallet-Assistant",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/myTselection/Wallet-Assistant/issues",
+  "requirements": [],
+  "version": "1.1.1"
 }
