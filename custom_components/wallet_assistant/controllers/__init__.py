@@ -1,9 +1,7 @@
-from .item_view import LegacyWalletAssistantItemAPI, WalletAssistantItemAPI
-from .list_view import LegacyWalletAssistantListAPI, WalletAssistantListAPI
+from .item_view import WalletAssistantItemAPI
+from .list_view import WalletAssistantListAPI
 
 __all__ = [
     "WalletAssistantListAPI",
     "WalletAssistantItemAPI",
-    "LegacyWalletAssistantListAPI",
-    "LegacyWalletAssistantItemAPI",
 ]

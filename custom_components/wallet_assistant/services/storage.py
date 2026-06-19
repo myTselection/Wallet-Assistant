@@ -9,7 +9,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ..const import SIGNAL_ITEMS_UPDATED, TYPE_VOUCHER
 from ..models.card import WalletItem
-from .path_utils import get_legacy_storage_path, get_storage_path
+from .path_utils import get_storage_path
 
 
 class WalletStorage:
@@ -26,13 +26,12 @@ class WalletStorage:
             return
         self.hass = hass
         self.file_path = get_storage_path(hass)
-        self.legacy_file_path = get_legacy_storage_path(hass)
         self.items: List[WalletItem] = []
         self._initialized = True
 
     async def load(self) -> None:
         raw_list = await self.hass.async_add_executor_job(self._read_items)
-        self.items = [WalletItem.from_dict(item) for item in raw_list if item.get("item_id") or item.get("card_id")]
+        self.items = [WalletItem.from_dict(item) for item in raw_list if item.get("item_id")]
 
     async def add_item(self, item: WalletItem) -> WalletItem:
         self.items.append(item)
@@ -85,11 +84,10 @@ class WalletStorage:
         async_dispatcher_send(self.hass, SIGNAL_ITEMS_UPDATED)
 
     def _read_items(self) -> list[dict]:
-        path = self.file_path if os.path.exists(self.file_path) else self.legacy_file_path
-        if not os.path.exists(path):
+        if not os.path.exists(self.file_path):
             return []
 
-        with open(path, "r", encoding="utf-8") as file:
+        with open(self.file_path, "r", encoding="utf-8") as file:
             try:
                 return json.load(file) or []
             except json.JSONDecodeError:
@@ -98,15 +96,6 @@ class WalletStorage:
     def _write_items(self, data: list[dict]) -> None:
         with open(self.file_path, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=2)
-
-    add_card = add_item
-    update_card = update_item
-    delete_card = delete_item
-    get_card_by_id = get_item_by_id
-
-
-CardStorage = WalletStorage
-
 
 def _parse_date(value: str) -> Optional[date]:
     try:

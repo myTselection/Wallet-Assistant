@@ -20,14 +20,12 @@ class WalletItem:
 
     @classmethod
     def from_dict(cls, data: dict) -> "WalletItem":
-        item_type = data.get("item_type") or data.get("type") or TYPE_LOYALTY
-        if item_type == "card":
-            item_type = TYPE_LOYALTY
+        item_type = data.get("item_type") or TYPE_LOYALTY
         if item_type not in ITEM_TYPES:
             item_type = TYPE_LOYALTY
 
         return cls(
-            item_id=data.get("item_id") or data.get("card_id"),
+            item_id=data.get("item_id"),
             name=data.get("name", ""),
             code=data.get("code", ""),
             owner=data.get("owner", ""),
@@ -40,26 +38,17 @@ class WalletItem:
             promo_url=data.get("promo_url") or data.get("url") or None,
         )
 
-    @property
-    def card_id(self) -> str:
-        return self.item_id
-
     def to_dict(self) -> dict:
         return {
             "item_id": self.item_id,
-            "card_id": self.item_id,
             "name": self.name,
             "code": self.code,
             "owner": self.owner,
             "user_id": self.user_id,
             "item_type": self.item_type,
-            "type": self.item_type,
             "format": self.format or DEFAULT_BARCODE_FORMAT,
             "logo_slug": self.logo_slug,
             "expires_on": self.expires_on,
             "notes": self.notes,
             "promo_url": self.promo_url,
         }
-
-
-Card = WalletItem

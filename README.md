@@ -61,11 +61,9 @@ type: module
 type: custom:wallet-assistant-card
 ```
 
-The legacy `custom:cardwallet-card` tag and `/api/cardwallet` API remain available for existing dashboards, but new dashboards should use `custom:wallet-assistant-card`.
+## Storage
 
-## Storage and Migration
-
-Wallet Assistant stores items in `wallet_assistant_items.json` in the Home Assistant config folder. If an older `cardwallet_cards.json` file exists and the new file does not, Wallet Assistant reads those card records and writes them in the new item model on the next save.
+Wallet Assistant stores items in `wallet_assistant_items.json` in the Home Assistant config folder.
 
 ## Dashboard Resource
 

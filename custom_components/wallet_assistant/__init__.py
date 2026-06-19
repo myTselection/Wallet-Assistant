@@ -11,8 +11,6 @@ except ImportError:
     StaticPathConfig = None
 
 from .api import (
-    LegacyWalletAssistantItemAPI,
-    LegacyWalletAssistantListAPI,
     WalletAssistantItemAPI,
     WalletAssistantListAPI,
 )
@@ -48,8 +46,6 @@ async def _async_setup_once(hass: HomeAssistant) -> None:
 
     hass.http.register_view(WalletAssistantListAPI(hass))
     hass.http.register_view(WalletAssistantItemAPI(hass))
-    hass.http.register_view(LegacyWalletAssistantListAPI(hass))
-    hass.http.register_view(LegacyWalletAssistantItemAPI(hass))
 
     hass.data[DOMAIN]["setup_complete"] = True
 

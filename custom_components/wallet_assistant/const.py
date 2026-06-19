@@ -6,11 +6,9 @@ NAME = "Wallet Assistant"
 PLATFORMS = ["sensor"]
 
 API_BASE = "/api/wallet_assistant"
-LEGACY_API_BASE = "/api/cardwallet"
 FRONTEND_PATH = "/wallet_assistant_static/wallet-assistant-card.js"
 
 STORAGE_FILE = "wallet_assistant_items.json"
-LEGACY_STORAGE_FILE = "cardwallet_cards.json"
 
 SIGNAL_ITEMS_UPDATED = f"{DOMAIN}_items_updated"
 

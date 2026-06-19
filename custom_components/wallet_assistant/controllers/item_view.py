@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from homeassistant.components.http import HomeAssistantView
 
-from ..const import API_BASE, LEGACY_API_BASE
+from ..const import API_BASE
 from ..services.storage import WalletStorage
 
 
@@ -41,8 +41,3 @@ class WalletAssistantItemAPI(HomeAssistantView):
         if updated:
             return self.json(updated.to_dict())
         return self.json({"error": "item not found"}, status_code=404)
-
-
-class LegacyWalletAssistantItemAPI(WalletAssistantItemAPI):
-    url = f"{LEGACY_API_BASE}/{{item_id}}"
-    name = "api:cardwallet:item"

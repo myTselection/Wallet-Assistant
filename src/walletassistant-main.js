@@ -1,6 +1,6 @@
 ﻿import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
-import styleContent from './cardwallet-style.css' assert { type: 'text' };
+import styleContent from './wallet-assistant-style.css' assert { type: 'text' };
 
 const DIGIT_ONLY_FORMATS = new Set([
   "EAN", "EAN13", "EAN8", "UPC", "ITF", "ITF14",
@@ -8,7 +8,6 @@ const DIGIT_ONLY_FORMATS = new Set([
 ]);
 const LOGO_DEV_PUBLISHABLE_KEY = "pk_Svpm4b4MRmC5bvOmTw9jdg";
 const API_PATH = "wallet_assistant";
-const LEGACY_API_PATH = "cardwallet";
 const TYPE_LABELS = {
   loyalty: "Card",
   voucher: "Voucher",
@@ -44,12 +43,11 @@ function getLogoUrl(slug, size = 64) {
 }
 
 function getItemId(item) {
-  return item?.item_id || item?.card_id;
+  return item?.item_id;
 }
 
 function getItemType(item) {
-  const type = item?.item_type || item?.type || "loyalty";
-  return type === "card" ? "loyalty" : type;
+  return item?.item_type || "loyalty";
 }
 
 function getTypeLabel(item) {
@@ -67,11 +65,10 @@ function normalizeItem(item) {
   return {
     ...item,
     item_id: getItemId(item),
-    card_id: getItemId(item),
     item_type: getItemType(item),
     format: item.format || "CODE128",
     code: item.code || "",
-    expires_on: item.expires_on || item.expiry_date || ""
+    expires_on: item.expires_on || ""
   };
 }
 
@@ -216,12 +213,7 @@ class WalletAssistantCard extends HTMLElement {
       this._inputState.focusId = activeId;
     }
 
-    let all = [];
-    try {
-      all = await this._hass.callApi("get", API_PATH);
-    } catch (err) {
-      all = await this._hass.callApi("get", LEGACY_API_PATH);
-    }
+    const all = await this._hass.callApi("get", API_PATH);
     const uid = this._hass.user.id;
 
     const items = all.map(normalizeItem);
@@ -641,6 +633,3 @@ class WalletAssistantCard extends HTMLElement {
 }
 
 customElements.define("wallet-assistant-card", WalletAssistantCard);
-if (!customElements.get("cardwallet-card")) {
-  customElements.define("cardwallet-card", WalletAssistantCard);
-}

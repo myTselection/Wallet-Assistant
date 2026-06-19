@@ -1,6 +1,4 @@
 from .controllers import (
-    LegacyWalletAssistantItemAPI,
-    LegacyWalletAssistantListAPI,
     WalletAssistantItemAPI,
     WalletAssistantListAPI,
 )
@@ -8,6 +6,4 @@ from .controllers import (
 __all__ = [
     "WalletAssistantListAPI",
     "WalletAssistantItemAPI",
-    "LegacyWalletAssistantListAPI",
-    "LegacyWalletAssistantItemAPI",
 ]

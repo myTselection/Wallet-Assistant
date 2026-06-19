@@ -8,7 +8,6 @@ from ..const import (
     API_BASE,
     DEFAULT_BARCODE_FORMAT,
     ITEM_TYPES,
-    LEGACY_API_BASE,
     TYPE_LOYALTY,
 )
 from ..models.card import WalletItem
@@ -56,12 +55,6 @@ class WalletAssistantListAPI(HomeAssistantView):
         )
         saved = await self.storage.add_item(item)
         return self.json(saved.to_dict())
-
-
-class LegacyWalletAssistantListAPI(WalletAssistantListAPI):
-    url = LEGACY_API_BASE
-    name = "api:cardwallet:list"
-
 
 def _clean_optional_string(value):
     if isinstance(value, str) and value.strip():
