@@ -180,7 +180,10 @@ class WalletAssistantCard extends HTMLElement {
 
     this.toolbarContainer.innerHTML = `
       <div class="action-row">
-        <input id="filter" class="filter-input" placeholder="Filter items..." value="" />
+        <div class="filter-input-wrap">
+          <input id="filter" class="filter-input" placeholder="Filter items..." value="" />
+          <button id="clear-filter" class="clear-filter-button" type="button" title="Clear filter" aria-label="Clear filter" hidden><ha-icon icon="mdi:close"></ha-icon></button>
+        </div>
         <button id="toggle-filters" class="toolbar-icon-button" title="Show filters" aria-label="Show filters"><ha-icon icon="mdi:filter-outline"></ha-icon></button>
         <button id="toggle-card-view" class="toolbar-icon-button" title="List view" aria-label="List view"><ha-icon icon="mdi:view-list"></ha-icon></button>
         <button id="add-card" class="toolbar-icon-button" title="Add item"><ha-icon icon="mdi:plus"></ha-icon></button>
@@ -203,6 +206,13 @@ class WalletAssistantCard extends HTMLElement {
       ?.addEventListener("input", (event) => {
         this.filterText = event.target.value;
         this.render();
+      });
+
+    this.toolbarContainer.querySelector("#clear-filter")
+      ?.addEventListener("click", () => {
+        this.filterText = "";
+        this.render();
+        this.toolbarContainer.querySelector("#filter")?.focus();
       });
 
     this.toolbarContainer.querySelector("#add-card")
@@ -447,43 +457,40 @@ class WalletAssistantCard extends HTMLElement {
     dialog.className = "edit-dialog";
     dialog.innerHTML = `
       <div class="dialog-content">
-        <label>Name</label>
-        <input id="edit-name" type="text" value="${escapeHtml(card.name)}" />
-        <label>Barcode number</label>
-        <div class="code-input-row">
-          <input id="edit-code" type="text" value="${escapeHtml(card.code)}" />
-          <button id="scan-edit-code" class="inline-icon-button" type="button" title="Scan barcode" aria-label="Scan barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
-        </div>
-        <label>Logo.dev slug</label>
-        <input id="edit-logo-slug" type="text" value="${escapeHtml(card.logo_slug || "")}" placeholder="example.com" />
-        <label>Type</label>
-        <select id="edit-type">
-          <option value="loyalty" ${getItemType(card) === "loyalty" ? "selected" : ""}>Loyalty card</option>
-          <option value="voucher" ${getItemType(card) === "voucher" ? "selected" : ""}>Voucher</option>
-          <option value="promotion" ${getItemType(card) === "promotion" ? "selected" : ""}>Promotion</option>
-        </select>
-        <label>Expiry date</label>
-        <input id="edit-expires-on" type="date" value="${escapeHtml(card.expires_on || "")}" />
-        <label>Default barcode format</label>
-        <select id="edit-format">
-          ${supportedFormats
-            .map(
-              (f) =>
-                `<option value="${f}" ${f === (card.format || "CODE128") ? "selected" : ""}>${f}</option>`
-            )
-            .join("")}
-        </select>
+        <h3>Edit item</h3>
+        <form class="popup-form">
+          <select id="edit-type" aria-label="Type">
+            <option value="loyalty" ${getItemType(card) === "loyalty" ? "selected" : ""}>Loyalty card</option>
+            <option value="voucher" ${getItemType(card) === "voucher" ? "selected" : ""}>Voucher</option>
+            <option value="promotion" ${getItemType(card) === "promotion" ? "selected" : ""}>Promotion</option>
+          </select>
+          <input id="edit-name" type="text" placeholder="Name" value="${escapeHtml(card.name)}" />
+          <div class="code-input-row">
+            <input id="edit-code" type="text" placeholder="Code" value="${escapeHtml(card.code)}" />
+            <button id="scan-edit-code" class="inline-icon-button" type="button" title="Scan barcode" aria-label="Scan barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+          </div>
+          <input id="edit-logo-slug" type="text" value="${escapeHtml(card.logo_slug || "")}" placeholder="Logo.dev slug (optional)" />
+          <input id="edit-expires-on" type="date" value="${escapeHtml(card.expires_on || "")}" title="Expiry date" aria-label="Expiry date" />
+          <select id="edit-format" title="Default barcode format" aria-label="Default barcode format">
+            ${supportedFormats
+              .map(
+                (f) =>
+                  `<option value="${f}" ${f === (card.format || "CODE128") ? "selected" : ""}>${f}</option>`
+              )
+              .join("")}
+          </select>
 
-        <div id="preview-wrap" style="margin-top:10px; text-align:center;">
-          <canvas id="preview-canvas"></canvas>
-          <div id="preview-error" style="color:red; font-size:0.9em; display:none;"></div>
-        </div>
+          <div id="preview-wrap" style="margin-top:10px; text-align:center;">
+            <canvas id="preview-canvas"></canvas>
+            <div id="preview-error" style="color:red; font-size:0.9em; display:none;"></div>
+          </div>
 
-        <div class="btn-row">
-          <button id="delete-btn" class="danger-button"><ha-icon icon="mdi:delete"></ha-icon> Delete</button>
-          <button id="save-btn"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
-          <button id="cancel-btn"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
-        </div>
+          <div class="btn-row">
+            <button id="delete-btn" class="danger-button" type="button"><ha-icon icon="mdi:delete"></ha-icon> Delete</button>
+            <button id="save-btn" type="button"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
+            <button id="cancel-btn" type="button"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
+          </div>
+        </form>
       </div>
     `;
 
@@ -619,10 +626,12 @@ class WalletAssistantCard extends HTMLElement {
     );
 
     const filterInput = this.toolbarContainer.querySelector("#filter");
+    const clearFilterButton = this.toolbarContainer.querySelector("#clear-filter");
     const toggleFiltersButton = this.toolbarContainer.querySelector("#toggle-filters");
     const toggleViewButton = this.toolbarContainer.querySelector("#toggle-card-view");
     const filterPanel = this.toolbarContainer.querySelector(".filter-panel");
     if (filterInput) filterInput.value = this.filterText;
+    if (clearFilterButton) clearFilterButton.hidden = !this.filterText;
     if (toggleFiltersButton) {
       toggleFiltersButton.classList.toggle("active", this.filtersEnabled);
       toggleFiltersButton.title = this.filtersEnabled ? "Hide filters" : "Show filters";
@@ -705,17 +714,17 @@ class WalletAssistantCard extends HTMLElement {
           <div class="dialog-content">
             <h3>Add new item</h3>
             <form id="add-card-form" class="popup-form">
+              <select id="add-type">
+                <option value="loyalty" ${(this._inputState.item_type || "loyalty") === "loyalty" ? "selected" : ""}>Loyalty card</option>
+                <option value="voucher" ${this._inputState.item_type === "voucher" ? "selected" : ""}>Voucher</option>
+                <option value="promotion" ${this._inputState.item_type === "promotion" ? "selected" : ""}>Promotion</option>
+              </select>
               <input id="add-name" placeholder="Name" value="${escapeHtml(this._inputState.name || "")}" />
               <div class="code-input-row">
                 <input id="add-code" placeholder="Code" value="${escapeHtml(this._inputState.code || "")}" />
                 <button type="button" id="scan-add-code" class="inline-icon-button" title="Scan barcode" aria-label="Scan barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
               </div>
               <input id="add-logo-slug" placeholder="Logo.dev slug (optional)" value="${escapeHtml(this._inputState.logo_slug || "")}" />
-              <select id="add-type">
-                <option value="loyalty" ${(this._inputState.item_type || "loyalty") === "loyalty" ? "selected" : ""}>Loyalty card</option>
-                <option value="voucher" ${this._inputState.item_type === "voucher" ? "selected" : ""}>Voucher</option>
-                <option value="promotion" ${this._inputState.item_type === "promotion" ? "selected" : ""}>Promotion</option>
-              </select>
               <input id="add-expires-on" type="date" value="${escapeHtml(this._inputState.expires_on || "")}" />
               <div class="btn-row">
                 <button type="submit" id="save-btn"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
