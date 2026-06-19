@@ -55,13 +55,11 @@ So I started with the Card Wallet code and extended it.
 1. Open the HACS repository link above, or add `myTselection/Wallet-Assistant` manually as a custom HACS integration repository.
 2. Install **Wallet Assistant** from HACS and restart Home Assistant.
 3. Add **Wallet Assistant** from **Settings > Devices & services > Add integration**.
-4. Add a manual Lovelace card:
+4. Add a new Lovelace/Dashboard card by selecting the card in UI ('Community cards') or manually:
 
 ```yaml
 type: custom:wallet-assistant-card
 ```
-
-The integration automatically registers the bundled dashboard resource in Lovelace storage mode, so no manual dashboard resource entry is needed.
 
 ## Storage
 
