@@ -16,6 +16,8 @@ const TYPE_LABELS = {
 const CARD_TYPE = "wallet-assistant-card";
 const DEFAULT_VIEW = "barcode";
 const CODE_VIEWS = new Set([DEFAULT_VIEW, "qr"]);
+const DEFAULT_CARD_VIEW_MODE = "grid";
+const CARD_VIEW_MODES = new Set([DEFAULT_CARD_VIEW_MODE, "list"]);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
@@ -70,6 +72,10 @@ function getTypeLabel(item) {
 
 function normalizeDefaultView(value) {
   return CODE_VIEWS.has(value) ? value : DEFAULT_VIEW;
+}
+
+function normalizeCardViewMode(value) {
+  return CARD_VIEW_MODES.has(value) ? value : DEFAULT_CARD_VIEW_MODE;
 }
 
 function formatExpiry(value) {
@@ -144,7 +150,7 @@ class WalletAssistantCard extends HTMLElement {
 
     this.filterText = "";
     this.showAddDialog = false;
-    this.cardViewMode = "grid";
+    this.cardViewMode = DEFAULT_CARD_VIEW_MODE;
 
     const style = document.createElement("style");
     style.textContent = styleContent;
@@ -164,7 +170,7 @@ class WalletAssistantCard extends HTMLElement {
       </div>
       <div class="action-row">
         <input id="filter" class="filter-input" placeholder="Filter items..." value="" />
-        <button id="toggle-card-view" class="toolbar-icon-button" title="Grid view"><ha-icon icon="mdi:view-grid"></ha-icon></button>
+        <button id="toggle-card-view" class="toolbar-icon-button" title="List view" aria-label="List view"><ha-icon icon="mdi:view-list"></ha-icon></button>
         <button id="add-card" class="toolbar-icon-button" title="Add item"><ha-icon icon="mdi:plus"></ha-icon></button>
       </div>
     `;
@@ -209,10 +215,13 @@ class WalletAssistantCard extends HTMLElement {
 
   setConfig(config) {
     this._config = config;
+    this.cardViewMode = normalizeCardViewMode(config?.card_view_mode);
   }
 
   static getStubConfig() {
-    return {};
+    return {
+      card_view_mode: DEFAULT_CARD_VIEW_MODE
+    };
   }
 
   set hass(hass) {
