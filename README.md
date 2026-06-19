@@ -71,6 +71,38 @@ The dashboard card is built into `custom_components/wallet_assistant/frontend/wa
 
 ## 📷 Screenshots
 
+<img width="514" height="307" alt="image" src="https://github.com/user-attachments/assets/ee60e7b2-f5d3-484c-94c3-c6ae1976055e" />
+
+---
+
+<img width="532" height="156" alt="image" src="https://github.com/user-attachments/assets/744a5f23-d26e-4150-8b84-03eb8d8f840c" />
+
+---
+<img width="525" height="327" alt="image" src="https://github.com/user-attachments/assets/ae7cd14b-04a4-485b-adc4-e7448d0cd602" />
+
+---
+<img width="527" height="554" alt="image" src="https://github.com/user-attachments/assets/72fac2c8-a556-4746-980c-9b6f1e6ec5d2" />
+
+---
+<img width="373" height="523" alt="image" src="https://github.com/user-attachments/assets/8687d0b9-4141-4061-8db2-88dc313466e1" />
+
+---
+<img width="666" height="318" alt="image" src="https://github.com/user-attachments/assets/3aaad85b-e9fd-40c2-b35b-8ae6f398ff81" />
+
+---
+<img width="590" height="735" alt="image" src="https://github.com/user-attachments/assets/61c74acf-3df2-4997-9d17-6e659432af57" />
+
+---
+<img width="602" height="738" alt="image" src="https://github.com/user-attachments/assets/f096c4a5-d155-4ebe-9762-c804ea70f62d" />
+
+---
+
+
+
+
+
+
+
 ## 🙏 Credits
 
 - [Card Wallet](https://github.com/rozgonyiadam) - Original code base and main base functionality
