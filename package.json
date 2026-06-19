@@ -1,0 +1,15 @@
+{
+  "name": "wallet-assistant",
+  "version": "1.0.0",
+  "description": "Wallet Assistant Home Assistant dashboard card",
+  "scripts": {
+    "build": "esbuild src/walletassistant-main.js --bundle --minify --outfile=custom_components/wallet_assistant/frontend/wallet-assistant-card.js --loader:.css=text --format=esm"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.2"
+  },
+  "dependencies": {
+    "jsbarcode": "^3.11.6",
+    "qrcode": "^1.5.4"
+  }
+}

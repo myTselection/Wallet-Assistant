@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wallet Assistant",
+        "description": "Set up Wallet Assistant for loyalty cards, vouchers, and promotions."
+      }
+    },
+    "abort": {
+      "already_configured": "Wallet Assistant is already configured."
+    }
+  }
+}
