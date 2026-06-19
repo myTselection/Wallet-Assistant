@@ -385,6 +385,7 @@ class WalletAssistantCard extends HTMLElement {
         </div>
 
         <div class="btn-row">
+          <button id="delete-btn" class="danger-button"><ha-icon icon="mdi:delete"></ha-icon> Delete</button>
           <button id="save-btn"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
           <button id="cancel-btn"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
         </div>
@@ -426,6 +427,10 @@ class WalletAssistantCard extends HTMLElement {
 
     // --- buttons ---
     dialog.querySelector("#cancel-btn").addEventListener("click", () => dialog.remove());
+    dialog.querySelector("#delete-btn").addEventListener("click", async () => {
+      dialog.remove();
+      await this.deleteCard(card);
+    });
 
     dialog.querySelector("#save-btn").addEventListener("click", async () => {
       const newName = nameInput.value;
@@ -573,7 +578,6 @@ class WalletAssistantCard extends HTMLElement {
             <button id="toggle-code"><ha-icon icon="mdi:cached"></ha-icon> QR/Barcode</button>
             ${this.selectedCard.user_id === this._hass.user.id ? `
               <button id="edit"><ha-icon icon="mdi:pencil"></ha-icon> Edit</button>
-              <button id="delete"><ha-icon icon="mdi:delete"></ha-icon> Delete</button>
             ` : ""}
           </div>
           <ha-icon icon="mdi:close" class="close-btn" id="close" title="Close"></ha-icon>
@@ -665,8 +669,6 @@ class WalletAssistantCard extends HTMLElement {
         ?.addEventListener("click", () => this.closeCard());
 
       if (this.selectedCard.user_id === this._hass.user.id) {
-        this.dynamicContainer.querySelector("#delete")
-          ?.addEventListener("click", () => this.deleteCard(this.selectedCard));
         this.dynamicContainer.querySelector("#edit")
           ?.addEventListener("click", () => this.updateCard(this.selectedCard));
       }

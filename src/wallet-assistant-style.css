@@ -395,6 +395,14 @@ ha-icon {
 	background: #777;
 }
 
+.btn-row button.danger-button {
+	background: #c62828;
+}
+
+.btn-row button.danger-button:hover {
+	background: #a61b1b;
+}
+
 .close-btn {
 	position: absolute;
 	top: 8px;
