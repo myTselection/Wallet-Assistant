@@ -39,6 +39,18 @@
 	box-sizing: border-box;
 }
 
+.code-input-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+}
+
+.code-input-row input {
+	flex: 1;
+	min-width: 0;
+}
+
 button {
 	min-height: 40px;
 	display: inline-flex;
@@ -80,6 +92,14 @@ button ha-icon {
 	width: 40px;
 	min-width: 40px;
 	height: 40px;
+}
+
+.inline-icon-button {
+	flex: 0 0 40px;
+	width: 40px;
+	min-width: 40px;
+	height: 40px;
+	padding: 0;
 }
 
 .filter-panel {
@@ -379,6 +399,45 @@ ha-icon {
 	width: 100%;
 	box-sizing: border-box;
 	box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+}
+
+.scanner-dialog {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.65);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1100;
+}
+
+.scanner-content {
+	width: min(420px, 92vw);
+	background: #fff;
+	border-radius: 8px;
+	padding: 12px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+}
+
+.scanner-content video {
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	background: #111;
+	border-radius: 6px;
+}
+
+#scanner-status {
+	color: #333;
+	font-size: 0.9em;
+	text-align: center;
 }
 
 .popup-form {

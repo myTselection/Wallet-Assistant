@@ -9,6 +9,7 @@
     "esbuild": "^0.20.2"
   },
   "dependencies": {
+    "@zxing/browser": "^0.2.0",
     "jsbarcode": "^3.11.6",
     "qrcode": "^1.5.4"
   }

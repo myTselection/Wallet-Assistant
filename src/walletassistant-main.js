@@ -1,5 +1,6 @@
 ﻿import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 import styleContent from './wallet-assistant-style.css' assert { type: 'text' };
 
 const DIGIT_ONLY_FORMATS = new Set([
@@ -375,6 +376,62 @@ class WalletAssistantCard extends HTMLElement {
     this.loadCards();
   }
 
+  async scanBarcodeIntoInput(input, onValue = null) {
+    if (!input) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert("Camera scanning is not available in this browser.");
+      return;
+    }
+
+    const dialog = document.createElement("div");
+    dialog.className = "scanner-dialog";
+    dialog.innerHTML = `
+      <div class="scanner-content">
+        <video id="scanner-video" autoplay muted playsinline></video>
+        <div id="scanner-status">Point the camera at a barcode</div>
+        <div class="btn-row">
+          <button id="scanner-cancel" type="button"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
+        </div>
+      </div>
+    `;
+    this.shadowRoot.appendChild(dialog);
+
+    const video = dialog.querySelector("#scanner-video");
+    const status = dialog.querySelector("#scanner-status");
+    const reader = new BrowserMultiFormatReader();
+    let scannerControls = null;
+    let closed = false;
+
+    const closeScanner = (controls = scannerControls) => {
+      if (closed) return;
+      closed = true;
+      controls?.stop();
+      dialog.remove();
+    };
+
+    dialog.querySelector("#scanner-cancel").addEventListener("click", () => closeScanner());
+
+    try {
+      scannerControls = await reader.decodeFromVideoDevice(undefined, video, (result, error, controls) => {
+        if (closed) return;
+        if (result) {
+          const value = result.getText();
+          input.value = value;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          onValue?.(value);
+          closeScanner(controls);
+          return;
+        }
+
+        if (error && error.name !== "NotFoundException") {
+          status.textContent = "Scanning...";
+        }
+      });
+    } catch (error) {
+      status.textContent = error?.message || "Unable to start camera.";
+    }
+  }
+
   async updateCard(card) {
     const supportedFormats = [
       "CODE128", "CODE128A", "CODE128B", "CODE128C",
@@ -393,7 +450,10 @@ class WalletAssistantCard extends HTMLElement {
         <label>Name</label>
         <input id="edit-name" type="text" value="${escapeHtml(card.name)}" />
         <label>Barcode number</label>
-        <input id="edit-code" type="text" value="${escapeHtml(card.code)}" />
+        <div class="code-input-row">
+          <input id="edit-code" type="text" value="${escapeHtml(card.code)}" />
+          <button id="scan-edit-code" class="inline-icon-button" type="button" title="Scan barcode" aria-label="Scan barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+        </div>
         <label>Logo.dev slug</label>
         <input id="edit-logo-slug" type="text" value="${escapeHtml(card.logo_slug || "")}" placeholder="example.com" />
         <label>Type</label>
@@ -459,6 +519,8 @@ class WalletAssistantCard extends HTMLElement {
     formatSelect.addEventListener("change", renderPreview);
     codeInput?.addEventListener("input", renderPreview);
     renderPreview(); // initial
+    dialog.querySelector("#scan-edit-code")
+      ?.addEventListener("click", () => this.scanBarcodeIntoInput(codeInput, renderPreview));
 
     // --- buttons ---
     dialog.querySelector("#cancel-btn").addEventListener("click", () => dialog.remove());
@@ -644,7 +706,10 @@ class WalletAssistantCard extends HTMLElement {
             <h3>Add new item</h3>
             <form id="add-card-form" class="popup-form">
               <input id="add-name" placeholder="Name" value="${escapeHtml(this._inputState.name || "")}" />
-              <input id="add-code" placeholder="Code" value="${escapeHtml(this._inputState.code || "")}" />
+              <div class="code-input-row">
+                <input id="add-code" placeholder="Code" value="${escapeHtml(this._inputState.code || "")}" />
+                <button type="button" id="scan-add-code" class="inline-icon-button" title="Scan barcode" aria-label="Scan barcode"><ha-icon icon="mdi:barcode-scan"></ha-icon></button>
+              </div>
               <input id="add-logo-slug" placeholder="Logo.dev slug (optional)" value="${escapeHtml(this._inputState.logo_slug || "")}" />
               <select id="add-type">
                 <option value="loyalty" ${(this._inputState.item_type || "loyalty") === "loyalty" ? "selected" : ""}>Loyalty card</option>
@@ -690,6 +755,8 @@ class WalletAssistantCard extends HTMLElement {
       const addExpiresOn = this.shadowRoot.getElementById("add-expires-on");
       addName?.addEventListener("input", (event) => { this._inputState.name = event.target.value; });
       addCode?.addEventListener("input", (event) => { this._inputState.code = event.target.value; });
+      this.dynamicContainer.querySelector("#scan-add-code")
+        ?.addEventListener("click", () => this.scanBarcodeIntoInput(addCode));
       addLogoSlug?.addEventListener("input", (event) => { this._inputState.logo_slug = event.target.value; });
       addType?.addEventListener("change", (event) => { this._inputState.item_type = event.target.value; });
       addExpiresOn?.addEventListener("input", (event) => { this._inputState.expires_on = event.target.value; });
