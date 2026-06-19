@@ -1,0 +1,13 @@
+{
+  "domain": "wallet_assistant",
+  "name": "Wallet Assistant",
+  "version": "1.0.0",
+  "documentation": "https://github.com/myTselection/Wallet-Assistant",
+  "issue_tracker": "https://github.com/myTselection/Wallet-Assistant/issues",
+  "dependencies": [],
+  "codeowners": [ "@myTselection" ],
+  "requirements": [],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "integration_type": "helper"
+}

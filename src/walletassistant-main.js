@@ -7,6 +7,13 @@ const DIGIT_ONLY_FORMATS = new Set([
   "MSI", "MSI10", "MSI11", "MSI1010", "MSI1110", "pharmacode"
 ]);
 const LOGO_DEV_PUBLISHABLE_KEY = "pk_Svpm4b4MRmC5bvOmTw9jdg";
+const API_PATH = "wallet_assistant";
+const LEGACY_API_PATH = "cardwallet";
+const TYPE_LABELS = {
+  loyalty: "Card",
+  voucher: "Voucher",
+  promotion: "Promo"
+};
 
 function sanitizeCode(value, fmt) {
   let s = String(value ?? "")
@@ -34,6 +41,38 @@ function getLogoUrl(slug, size = 64) {
   const cleanSlug = String(slug ?? "").trim();
   if (!cleanSlug) return "";
   return `https://img.logo.dev/${encodeURIComponent(cleanSlug)}?token=${LOGO_DEV_PUBLISHABLE_KEY}&size=${size}&format=webp&retina=true`;
+}
+
+function getItemId(item) {
+  return item?.item_id || item?.card_id;
+}
+
+function getItemType(item) {
+  const type = item?.item_type || item?.type || "loyalty";
+  return type === "card" ? "loyalty" : type;
+}
+
+function getTypeLabel(item) {
+  return TYPE_LABELS[getItemType(item)] || "Item";
+}
+
+function formatExpiry(value) {
+  if (!value) return "";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function normalizeItem(item) {
+  return {
+    ...item,
+    item_id: getItemId(item),
+    card_id: getItemId(item),
+    item_type: getItemType(item),
+    format: item.format || "CODE128",
+    code: item.code || "",
+    expires_on: item.expires_on || item.expiry_date || ""
+  };
 }
 
 function renderBarcodeCentral(target, code, fmt, opts = {}, errorTarget = null) {
@@ -72,7 +111,7 @@ function renderBarcodeCentral(target, code, fmt, opts = {}, errorTarget = null) 
   }
 }
 
-class CardWalletCard extends HTMLElement {
+class WalletAssistantCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -80,7 +119,8 @@ class CardWalletCard extends HTMLElement {
     this.viewModes = {};
     this.selectedCard = null;
     this.activeTab = "own";
-    this._inputState = { name: "", code: "", logo_slug: "" };
+    this.activeType = "all";
+    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
 
     this.toolbarContainer = document.createElement("div");
     this.toolbarContainer.className = "toolbar";
@@ -88,7 +128,7 @@ class CardWalletCard extends HTMLElement {
 
     this.filterText = "";
     this.showAddDialog = false;
-    this.cardViewMode = "list";
+    this.cardViewMode = "grid";
 
     const style = document.createElement("style");
     style.textContent = styleContent;
@@ -98,13 +138,18 @@ class CardWalletCard extends HTMLElement {
 
     this.toolbarContainer.innerHTML = `
       <div class="tabs">
-        <div class="tab active" id="tab-own">My Cards</div>
-        <div class="tab" id="tab-others">Others' Cards</div>
+        <div class="tab active" id="tab-own">My Items</div>
+        <div class="tab" id="tab-others">Others' Items</div>
+      </div>
+      <div class="type-filter">
+        <button class="type-pill active" id="type-all" type="button">All</button>
+        <button class="type-pill" id="type-loyalty" type="button">Cards</button>
+        <button class="type-pill" id="type-voucher" type="button">Vouchers</button>
       </div>
       <div class="action-row">
-        <input id="filter" class="filter-input" placeholder="Filter cards..." value="" />
+        <input id="filter" class="filter-input" placeholder="Filter items..." value="" />
         <button id="toggle-card-view" class="toolbar-icon-button" title="Grid view"><ha-icon icon="mdi:view-grid"></ha-icon></button>
-        <button id="add-card" class="toolbar-icon-button" title="Add Card"><ha-icon icon="mdi:plus"></ha-icon></button>
+        <button id="add-card" class="toolbar-icon-button" title="Add item"><ha-icon icon="mdi:plus"></ha-icon></button>
       </div>
     `;
 
@@ -136,6 +181,14 @@ class CardWalletCard extends HTMLElement {
         this.activeTab = "others";
         this.render();
       });
+
+    ["all", "loyalty", "voucher"].forEach(type => {
+      this.toolbarContainer.querySelector(`#type-${type}`)
+        ?.addEventListener("click", () => {
+          this.activeType = type;
+          this.render();
+        });
+    });
   }
 
   setConfig(config) {
@@ -151,20 +204,29 @@ class CardWalletCard extends HTMLElement {
     const nameEl = this.shadowRoot.getElementById("add-name") || this.shadowRoot.getElementById("name");
     const codeEl = this.shadowRoot.getElementById("add-code") || this.shadowRoot.getElementById("code");
     const logoSlugEl = this.shadowRoot.getElementById("add-logo-slug") || this.shadowRoot.getElementById("logo-slug");
+    const typeEl = this.shadowRoot.getElementById("add-type");
+    const expiresEl = this.shadowRoot.getElementById("add-expires-on");
     const activeId = this.shadowRoot.activeElement?.id || document.activeElement?.id;
-    if (nameEl || codeEl || logoSlugEl) {
+    if (nameEl || codeEl || logoSlugEl || typeEl || expiresEl) {
       this._inputState.name = nameEl?.value || "";
       this._inputState.code = codeEl?.value || "";
       this._inputState.logo_slug = logoSlugEl?.value || "";
+      this._inputState.item_type = typeEl?.value || "loyalty";
+      this._inputState.expires_on = expiresEl?.value || "";
       this._inputState.focusId = activeId;
     }
 
-    const all = await this._hass.callApi("get", "cardwallet");
+    let all = [];
+    try {
+      all = await this._hass.callApi("get", API_PATH);
+    } catch (err) {
+      all = await this._hass.callApi("get", LEGACY_API_PATH);
+    }
     const uid = this._hass.user.id;
 
-    // normalize format for old cards
-    this.ownCards = all.filter(c => c.user_id === uid).map(c => ({ ...c, format: c.format || "CODE128" }));
-    this.otherCards = all.filter(c => c.user_id !== uid).map(c => ({ ...c, format: c.format || "CODE128" }));
+    const items = all.map(normalizeItem);
+    this.ownCards = items.filter(c => c.user_id === uid);
+    this.otherCards = items.filter(c => c.user_id !== uid);
     this.render();
   }
 
@@ -174,9 +236,9 @@ class CardWalletCard extends HTMLElement {
   }
 
   openCard(cardId) {
-    this.selectedCard = [...this.ownCards, ...this.otherCards].find(c => c.card_id === cardId);
+    this.selectedCard = [...this.ownCards, ...this.otherCards].find(c => getItemId(c) === cardId);
     if (!this.viewModes[cardId]) {
-      this.viewModes[cardId] = "barcode";
+      this.viewModes[cardId] = localStorage.getItem(`wallet-assistant-mode-${cardId}`) || "barcode";
     }
     this.render();
   }
@@ -191,23 +253,31 @@ class CardWalletCard extends HTMLElement {
     const nameEl = this.shadowRoot.getElementById("add-name") || this.shadowRoot.getElementById("name");
     const codeEl = this.shadowRoot.getElementById("add-code") || this.shadowRoot.getElementById("code");
     const logoSlugEl = this.shadowRoot.getElementById("add-logo-slug") || this.shadowRoot.getElementById("logo-slug");
+    const typeEl = this.shadowRoot.getElementById("add-type");
+    const expiresEl = this.shadowRoot.getElementById("add-expires-on");
     const name = nameEl?.value?.trim();
     const code = codeEl?.value?.trim();
     const logoSlug = logoSlugEl?.value?.trim() || "";
+    const itemType = typeEl?.value || "loyalty";
+    const expiresOn = expiresEl?.value || "";
     if (!name || !code) return alert("Missing fields");
-    await this._hass.callApi("post", "cardwallet", {
+    await this._hass.callApi("post", API_PATH, {
       name,
       code,
       logo_slug: logoSlug,
       owner: this._hass.user.name,
       user_id: this._hass.user.id,
+      item_type: itemType,
+      expires_on: itemType === "voucher" ? expiresOn : "",
       format: "CODE128" // default for new cards
     });
 
-    this._inputState = { name: "", code: "", logo_slug: "" };
+    this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
     if (nameEl) nameEl.value = "";
     if (codeEl) codeEl.value = "";
     if (logoSlugEl) logoSlugEl.value = "";
+    if (typeEl) typeEl.value = "loyalty";
+    if (expiresEl) expiresEl.value = "";
     this.showAddDialog = false;
     this.loadCards();
   }
@@ -218,7 +288,7 @@ class CardWalletCard extends HTMLElement {
   }
 
   async deleteCard(card) {
-    await this._hass.callApi("delete", `cardwallet/${card.card_id}`, {
+    await this._hass.callApi("delete", `${API_PATH}/${getItemId(card)}`, {
       user_id: card.user_id
     });
     this.closeCard();
@@ -246,6 +316,14 @@ class CardWalletCard extends HTMLElement {
         <input id="edit-code" type="text" value="${escapeHtml(card.code)}" />
         <label>Logo.dev slug</label>
         <input id="edit-logo-slug" type="text" value="${escapeHtml(card.logo_slug || "")}" placeholder="example.com" />
+        <label>Type</label>
+        <select id="edit-type">
+          <option value="loyalty" ${getItemType(card) === "loyalty" ? "selected" : ""}>Loyalty card</option>
+          <option value="voucher" ${getItemType(card) === "voucher" ? "selected" : ""}>Voucher</option>
+          <option value="promotion" ${getItemType(card) === "promotion" ? "selected" : ""}>Promotion</option>
+        </select>
+        <label>Expiry date</label>
+        <input id="edit-expires-on" type="date" value="${escapeHtml(card.expires_on || "")}" />
         <label>Default barcode format</label>
         <select id="edit-format">
           ${supportedFormats
@@ -285,6 +363,8 @@ class CardWalletCard extends HTMLElement {
     const nameInput = dialog.querySelector("#edit-name");
     const codeInput = dialog.querySelector("#edit-code");
     const logoSlugInput = dialog.querySelector("#edit-logo-slug");
+    const typeSelect = dialog.querySelector("#edit-type");
+    const expiresInput = dialog.querySelector("#edit-expires-on");
     const formatSelect = dialog.querySelector("#edit-format");
     const previewCanvas = dialog.querySelector("#preview-canvas");
     const errorDiv = dialog.querySelector("#preview-error");
@@ -306,34 +386,40 @@ class CardWalletCard extends HTMLElement {
       const newName = nameInput.value;
       const newCode = dialog.querySelector("#edit-code").value;
       const newLogoSlug = logoSlugInput.value.trim();
+      const newType = typeSelect.value;
+      const newExpiresOn = expiresInput.value;
       const newFormat = formatSelect.value;
 
-      const updated = await this._hass.callApi("put", `cardwallet/${card.card_id}`, {
+      const updated = await this._hass.callApi("put", `${API_PATH}/${getItemId(card)}`, {
         user_id: card.user_id,
         name: newName,
         code: newCode,
         logo_slug: newLogoSlug,
+        item_type: newType,
+        expires_on: newType === "voucher" ? newExpiresOn : "",
         format: newFormat
       });
       const updatedCard = {
         name: newName,
         code: newCode,
         logo_slug: newLogoSlug,
+        item_type: newType,
+        expires_on: newType === "voucher" ? newExpiresOn : "",
         format: newFormat,
         ...(updated || {})
       };
 
       // locally update caches
       this.ownCards = this.ownCards.map((c) =>
-        c.card_id === card.card_id ? { ...c, ...updatedCard } : c
+        getItemId(c) === getItemId(card) ? normalizeItem({ ...c, ...updatedCard }) : c
       );
       this.otherCards = this.otherCards.map((c) =>
-        c.card_id === card.card_id ? { ...c, ...updatedCard } : c
+        getItemId(c) === getItemId(card) ? normalizeItem({ ...c, ...updatedCard }) : c
       );
 
       // if card is open, refresh the live canvas + title
-      if (this.selectedCard && this.selectedCard.card_id === card.card_id) {
-        this.selectedCard = { ...this.selectedCard, ...updatedCard };
+      if (this.selectedCard && getItemId(this.selectedCard) === getItemId(card)) {
+        this.selectedCard = normalizeItem({ ...this.selectedCard, ...updatedCard });
 
         const container = this.dynamicContainer.querySelector("#code-preview");
         if (container) {
@@ -364,12 +450,16 @@ class CardWalletCard extends HTMLElement {
 
     const cards = this.activeTab === "own" ? this.ownCards : this.otherCards;
     const filter = (this.filterText || "").trim().toLowerCase();
+    const typedCards = this.activeType === "all"
+      ? cards
+      : cards.filter(card => getItemType(card) === this.activeType);
     const filteredCards = filter
-      ? cards.filter(card =>
+      ? typedCards.filter(card =>
           card.name.toLowerCase().includes(filter) ||
-          String(card.owner || "").toLowerCase().includes(filter)
+          String(card.owner || "").toLowerCase().includes(filter) ||
+          getTypeLabel(card).toLowerCase().includes(filter)
         )
-      : cards;
+      : typedCards;
 
     const filterInput = this.toolbarContainer.querySelector("#filter");
     const toggleViewButton = this.toolbarContainer.querySelector("#toggle-card-view");
@@ -384,17 +474,24 @@ class CardWalletCard extends HTMLElement {
     }
     if (tabOwn) tabOwn.classList.toggle("active", this.activeTab === "own");
     if (tabOthers) tabOthers.classList.toggle("active", this.activeTab === "others");
+    ["all", "loyalty", "voucher"].forEach(type => {
+      this.toolbarContainer.querySelector(`#type-${type}`)
+        ?.classList.toggle("active", this.activeType === type);
+    });
 
     const selectedLogoUrl = this.selectedCard ? getLogoUrl(this.selectedCard.logo_slug, 96) : "";
     const selectedInitial = this.selectedCard ? getCardInitial(this.selectedCard.name) : "";
+    const selectedExpiry = this.selectedCard?.expires_on ? formatExpiry(this.selectedCard.expires_on) : "";
 
     this.dynamicContainer.innerHTML = `
       <div class="cardlist ${this.cardViewMode === "grid" ? "grid-view" : "list-view"}">
         ${filteredCards.length ? filteredCards.map(card => {
           const logoUrl = getLogoUrl(card.logo_slug, 64);
           const initial = getCardInitial(card.name);
+          const typeLabel = getTypeLabel(card);
+          const expiry = card.expires_on ? formatExpiry(card.expires_on) : "";
           return `
-          <div class="card" data-card-id="${escapeHtml(card.card_id)}" title="${escapeHtml(card.name)}">
+          <div class="card ${getItemType(card)}" data-card-id="${escapeHtml(getItemId(card))}" title="${escapeHtml(card.name)}">
             <div class="card-logo-wrap">
               ${logoUrl
                 ? `<img class="card-logo" src="${escapeHtml(logoUrl)}" alt="" data-initial="${escapeHtml(initial)}" loading="lazy" />`
@@ -402,11 +499,15 @@ class CardWalletCard extends HTMLElement {
             </div>
             <div class="card-details">
               <strong>${escapeHtml(card.name)}</strong>
-              ${this.activeTab === "others" ? `<small><ha-icon icon="mdi:account"></ha-icon> ${escapeHtml(card.owner)}</small>` : ""}
+              <small class="item-meta">
+                <span>${escapeHtml(typeLabel)}</span>
+                ${expiry ? `<span class="expiry"><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(expiry)}</span>` : ""}
+                ${this.activeTab === "others" ? `<span><ha-icon icon="mdi:account"></ha-icon>${escapeHtml(card.owner)}</span>` : ""}
+              </small>
             </div>
           </div>
         `;
-        }).join("") : `<div class="no-results">No matching cards</div>`}
+        }).join("") : `<div class="no-results">No matching items</div>`}
       </div>
       ${this.selectedCard ? `
         <div class="popup">
@@ -417,6 +518,10 @@ class CardWalletCard extends HTMLElement {
                 : `<div class="card-logo-placeholder popup-logo-placeholder">${escapeHtml(selectedInitial)}</div>`}
             </div>
             <h3 class="card-title">${escapeHtml(this.selectedCard.name)}</h3>
+          </div>
+          <div class="popup-meta">
+            <span>${escapeHtml(getTypeLabel(this.selectedCard))}</span>
+            ${selectedExpiry ? `<span><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(selectedExpiry)}</span>` : ""}
           </div>
           <div class="code" id="code-preview"></div>
           <div class="button-group">
@@ -432,11 +537,17 @@ class CardWalletCard extends HTMLElement {
       ${this.showAddDialog ? `
         <div class="dialog-overlay" id="add-dialog">
           <div class="dialog-content">
-            <h3>Add new card</h3>
+            <h3>Add new item</h3>
             <form id="add-card-form" class="popup-form">
               <input id="add-name" placeholder="Name" value="${escapeHtml(this._inputState.name || "")}" />
               <input id="add-code" placeholder="Code" value="${escapeHtml(this._inputState.code || "")}" />
               <input id="add-logo-slug" placeholder="Logo.dev slug (optional)" value="${escapeHtml(this._inputState.logo_slug || "")}" />
+              <select id="add-type">
+                <option value="loyalty" ${(this._inputState.item_type || "loyalty") === "loyalty" ? "selected" : ""}>Loyalty card</option>
+                <option value="voucher" ${this._inputState.item_type === "voucher" ? "selected" : ""}>Voucher</option>
+                <option value="promotion" ${this._inputState.item_type === "promotion" ? "selected" : ""}>Promotion</option>
+              </select>
+              <input id="add-expires-on" type="date" value="${escapeHtml(this._inputState.expires_on || "")}" />
               <div class="btn-row">
                 <button type="submit" id="save-btn"><ha-icon icon="mdi:content-save"></ha-icon> Save</button>
                 <button type="button" id="cancel-add-btn"><ha-icon icon="mdi:close"></ha-icon> Cancel</button>
@@ -471,13 +582,19 @@ class CardWalletCard extends HTMLElement {
       const addName = this.shadowRoot.getElementById("add-name");
       const addCode = this.shadowRoot.getElementById("add-code");
       const addLogoSlug = this.shadowRoot.getElementById("add-logo-slug");
+      const addType = this.shadowRoot.getElementById("add-type");
+      const addExpiresOn = this.shadowRoot.getElementById("add-expires-on");
       addName?.addEventListener("input", (event) => { this._inputState.name = event.target.value; });
       addCode?.addEventListener("input", (event) => { this._inputState.code = event.target.value; });
       addLogoSlug?.addEventListener("input", (event) => { this._inputState.logo_slug = event.target.value; });
+      addType?.addEventListener("change", (event) => { this._inputState.item_type = event.target.value; });
+      addExpiresOn?.addEventListener("input", (event) => { this._inputState.expires_on = event.target.value; });
     }
 
     if (this.selectedCard) {
-      const mode = this.viewModes[this.selectedCard.card_id] || "barcode";
+      const selectedId = getItemId(this.selectedCard);
+      const mode = this.viewModes[selectedId] || "barcode";
+      localStorage.setItem(`wallet-assistant-mode-${selectedId}`, mode);
       const container = this.dynamicContainer.querySelector("#code-preview");
       container.innerHTML = "";
 
@@ -499,7 +616,7 @@ class CardWalletCard extends HTMLElement {
       }
 
       this.dynamicContainer.querySelector("#toggle-code")
-        ?.addEventListener("click", () => this.toggleCodeType(this.selectedCard.card_id));
+        ?.addEventListener("click", () => this.toggleCodeType(selectedId));
       this.dynamicContainer.querySelector("#close")
         ?.addEventListener("click", () => this.closeCard());
 
@@ -523,4 +640,7 @@ class CardWalletCard extends HTMLElement {
   }
 }
 
-customElements.define("cardwallet-card", CardWalletCard);
+customElements.define("wallet-assistant-card", WalletAssistantCard);
+if (!customElements.get("cardwallet-card")) {
+  customElements.define("cardwallet-card", WalletAssistantCard);
+}

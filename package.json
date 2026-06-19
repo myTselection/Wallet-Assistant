@@ -1,9 +1,9 @@
 {
-  "name": "WalletAssistant",
+  "name": "wallet-assistant",
   "version": "1.0.0",
-  "description": "Wallet Assistant Lovelace card",
+  "description": "Wallet Assistant Home Assistant dashboard card",
   "scripts": {
-    "build": "esbuild src/walletassistant-main.js --bundle --minify --outfile=dist/walletassistant-card.js --loader:.css=text --format=esm"
+    "build": "esbuild src/walletassistant-main.js --bundle --minify --outfile=custom_components/wallet_assistant/frontend/wallet-assistant-card.js --loader:.css=text --format=esm"
   },
   "devDependencies": {
     "esbuild": "^0.20.2"
