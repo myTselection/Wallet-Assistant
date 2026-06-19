@@ -306,6 +306,12 @@ button ha-icon {
 	color: #bbb;
 }
 
+.popup-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+}
+
 .popup {
 	position: fixed;
 	top: 10%;
@@ -314,7 +320,7 @@ button ha-icon {
 	background: white;
 	padding: 1em;
 	border: 2px solid #ccc;
-	z-index: 1000;
+	z-index: 1001;
 	box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
 }
 

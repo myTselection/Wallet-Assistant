@@ -19,6 +19,7 @@ const DEFAULT_VIEW = "barcode";
 const CODE_VIEWS = new Set([DEFAULT_VIEW, "qr"]);
 const DEFAULT_CARD_VIEW_MODE = "grid";
 const CARD_VIEW_MODES = new Set([DEFAULT_CARD_VIEW_MODE, "list"]);
+const CARD_LOAD_RETRY_MS = 30_000;
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
@@ -158,6 +159,8 @@ class WalletAssistantCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
 
     this.viewModes = {};
+    this.ownCards = [];
+    this.otherCards = [];
     this.selectedCard = null;
     this.filtersEnabled = false;
     this.activeOwner = "all";
@@ -171,6 +174,9 @@ class WalletAssistantCard extends HTMLElement {
     this.filterText = "";
     this.showAddDialog = false;
     this.cardViewMode = DEFAULT_CARD_VIEW_MODE;
+    this._cardsLoaded = false;
+    this._cardsLoadPromise = null;
+    this._lastCardsLoadAttempt = 0;
 
     const style = document.createElement("style");
     style.textContent = styleContent;
@@ -262,11 +268,23 @@ class WalletAssistantCard extends HTMLElement {
   }
 
   set hass(hass) {
+    const previousUserId = this._hass?.user?.id;
     this._hass = hass;
-    this.loadCards();
+    if (previousUserId !== hass?.user?.id) {
+      this.loadCards({ force: true });
+    } else if (!this._cardsLoaded) {
+      this.loadCards();
+    }
   }
 
-  async loadCards() {
+  async loadCards({ force = false } = {}) {
+    if (!this._hass) return;
+    if (this._cardsLoadPromise) return this._cardsLoadPromise;
+
+    const now = Date.now();
+    if (!force && this._cardsLoaded) return;
+    if (!force && this._lastCardsLoadAttempt && now - this._lastCardsLoadAttempt < CARD_LOAD_RETRY_MS) return;
+
     const nameEl = this.shadowRoot.getElementById("add-name") || this.shadowRoot.getElementById("name");
     const codeEl = this.shadowRoot.getElementById("add-code") || this.shadowRoot.getElementById("code");
     const logoSlugEl = this.shadowRoot.getElementById("add-logo-slug") || this.shadowRoot.getElementById("logo-slug");
@@ -282,13 +300,23 @@ class WalletAssistantCard extends HTMLElement {
       this._inputState.focusId = activeId;
     }
 
-    const all = await this._hass.callApi("get", API_PATH);
-    const uid = this._hass.user.id;
+    this._lastCardsLoadAttempt = now;
+    this._cardsLoadPromise = (async () => {
+      const all = await this._hass.callApi("get", API_PATH);
+      const uid = this._hass.user.id;
 
-    const items = all.map(normalizeItem);
-    this.ownCards = items.filter(c => c.user_id === uid);
-    this.otherCards = items.filter(c => c.user_id !== uid);
-    this.render();
+      const items = all.map(normalizeItem);
+      this.ownCards = items.filter(c => c.user_id === uid);
+      this.otherCards = items.filter(c => c.user_id !== uid);
+      this._cardsLoaded = true;
+      this.render();
+    })();
+
+    try {
+      return await this._cardsLoadPromise;
+    } finally {
+      this._cardsLoadPromise = null;
+    }
   }
 
   async toggleCodeType(cardId) {
@@ -370,7 +398,7 @@ class WalletAssistantCard extends HTMLElement {
     if (typeEl) typeEl.value = "loyalty";
     if (expiresEl) expiresEl.value = "";
     this.showAddDialog = false;
-    this.loadCards();
+    await this.loadCards({ force: true });
   }
 
   closeAddDialog() {
@@ -383,7 +411,7 @@ class WalletAssistantCard extends HTMLElement {
       user_id: card.user_id
     });
     this.closeCard();
-    this.loadCards();
+    await this.loadCards({ force: true });
   }
 
   async scanBarcodeIntoInput(input, onValue = null) {
@@ -686,27 +714,29 @@ class WalletAssistantCard extends HTMLElement {
         }).join("") : `<div class="no-results">No matching items</div>`}
       </div>
       ${this.selectedCard ? `
-        <div class="popup">
-          <div class="popup-header">
-            <div class="popup-logo-wrap">
-              ${selectedLogoUrl
-                ? `<img class="card-logo popup-logo" src="${escapeHtml(selectedLogoUrl)}" alt="" data-initial="${escapeHtml(selectedInitial)}" loading="lazy" />`
-                : `<div class="card-logo-placeholder popup-logo-placeholder">${escapeHtml(selectedInitial)}</div>`}
+        <div class="popup-overlay" id="details-overlay">
+          <div class="popup">
+            <div class="popup-header">
+              <div class="popup-logo-wrap">
+                ${selectedLogoUrl
+                  ? `<img class="card-logo popup-logo" src="${escapeHtml(selectedLogoUrl)}" alt="" data-initial="${escapeHtml(selectedInitial)}" loading="lazy" />`
+                  : `<div class="card-logo-placeholder popup-logo-placeholder">${escapeHtml(selectedInitial)}</div>`}
+              </div>
+              <h3 class="card-title">${escapeHtml(this.selectedCard.name)}</h3>
             </div>
-            <h3 class="card-title">${escapeHtml(this.selectedCard.name)}</h3>
+            <div class="popup-meta">
+              <span>${escapeHtml(getTypeLabel(this.selectedCard))}</span>
+              ${selectedExpiry ? `<span><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(selectedExpiry)}</span>` : ""}
+            </div>
+            <div class="code" id="code-preview"></div>
+            <div class="button-group">
+              <button id="toggle-code"><ha-icon icon="mdi:cached"></ha-icon> QR/Barcode</button>
+              ${this.selectedCard.user_id === this._hass.user.id ? `
+                <button id="edit"><ha-icon icon="mdi:pencil"></ha-icon> Edit</button>
+              ` : ""}
+            </div>
+            <ha-icon icon="mdi:close" class="close-btn" id="close" title="Close"></ha-icon>
           </div>
-          <div class="popup-meta">
-            <span>${escapeHtml(getTypeLabel(this.selectedCard))}</span>
-            ${selectedExpiry ? `<span><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(selectedExpiry)}</span>` : ""}
-          </div>
-          <div class="code" id="code-preview"></div>
-          <div class="button-group">
-            <button id="toggle-code"><ha-icon icon="mdi:cached"></ha-icon> QR/Barcode</button>
-            ${this.selectedCard.user_id === this._hass.user.id ? `
-              <button id="edit"><ha-icon icon="mdi:pencil"></ha-icon> Edit</button>
-            ` : ""}
-          </div>
-          <ha-icon icon="mdi:close" class="close-btn" id="close" title="Close"></ha-icon>
         </div>
       ` : ""}
       ${this.showAddDialog ? `
@@ -798,6 +828,10 @@ class WalletAssistantCard extends HTMLElement {
         ?.addEventListener("click", () => this.toggleCodeType(selectedId));
       this.dynamicContainer.querySelector("#close")
         ?.addEventListener("click", () => this.closeCard());
+      this.dynamicContainer.querySelector("#details-overlay")
+        ?.addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) this.closeCard();
+        });
 
       if (this.selectedCard.user_id === this._hass.user.id) {
         this.dynamicContainer.querySelector("#edit")
