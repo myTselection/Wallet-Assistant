@@ -6,26 +6,12 @@
 	box-sizing: border-box;
 }
 
-.tabs {
-	display: flex;
-	justify-content: space-around;
-	margin-top: 8px;
-}
-
-.tab {
-	flex: 1;
-	padding: 0.5em;
-	text-align: center;
-	cursor: pointer;
-	background: #333;
-	color: #fff;
-}
-
 .toolbar {
 	display: flex;
 	flex-direction: column;
 	flex: 0 0 auto;
-	gap: 0.75em;
+	gap: 8px;
+	padding-bottom: 8px;
 }
 
 .toolbar + div {
@@ -35,32 +21,10 @@
 	min-height: 0;
 }
 
-.type-filter {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 6px;
-}
-
-.type-pill {
-	min-height: 34px;
-	padding: 0 8px;
-	background: #efefef;
-	color: #1f1f1f;
-	border: 1px solid #d0d0d0;
-}
-
-.type-pill.active {
-	background: #2f5f8f;
-	border-color: #2f5f8f;
-	color: #fff;
-	font-weight: 700;
-}
-
 .action-row {
 	display: flex;
 	gap: 8px;
 	align-items: center;
-	margin-top: 0.75em;
 }
 
 .filter-input {
@@ -95,6 +59,14 @@ button:hover {
 	background: #555;
 }
 
+button.active {
+	background: #2f5f8f;
+}
+
+button.active:hover {
+	background: #284f77;
+}
+
 button ha-icon {
 	margin-right: 0;
 }
@@ -110,9 +82,44 @@ button ha-icon {
 	height: 40px;
 }
 
-.tab.active {
-	background: #555;
-	font-weight: bold;
+.filter-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.filter-panel[hidden] {
+	display: none;
+}
+
+.filter-group {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+}
+
+.filter-chip {
+	min-height: 34px;
+	padding: 0 8px;
+	background: #efefef;
+	color: #1f1f1f;
+	border: 1px solid #d0d0d0;
+	font-size: 0.95em;
+}
+
+.filter-chip.active {
+	background: #2f5f8f;
+	border-color: #2f5f8f;
+	color: #fff;
+	font-weight: 700;
+}
+
+.filter-chip:hover {
+	background: #dedede;
+}
+
+.filter-chip.active:hover {
+	background: #284f77;
 }
 
 .cardlist {

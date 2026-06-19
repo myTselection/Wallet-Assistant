@@ -158,7 +158,8 @@ class WalletAssistantCard extends HTMLElement {
 
     this.viewModes = {};
     this.selectedCard = null;
-    this.activeTab = "own";
+    this.filtersEnabled = false;
+    this.activeOwner = "all";
     this.activeType = "all";
     this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
 
@@ -177,19 +178,23 @@ class WalletAssistantCard extends HTMLElement {
     this.shadowRoot.appendChild(this.dynamicContainer);
 
     this.toolbarContainer.innerHTML = `
-      <div class="tabs">
-        <div class="tab active" id="tab-own">My Items</div>
-        <div class="tab" id="tab-others">Others' Items</div>
-      </div>
-      <div class="type-filter">
-        <button class="type-pill active" id="type-all" type="button">All</button>
-        <button class="type-pill" id="type-loyalty" type="button">Cards</button>
-        <button class="type-pill" id="type-voucher" type="button">Vouchers</button>
-      </div>
       <div class="action-row">
         <input id="filter" class="filter-input" placeholder="Filter items..." value="" />
+        <button id="toggle-filters" class="toolbar-icon-button" title="Show filters" aria-label="Show filters"><ha-icon icon="mdi:filter-outline"></ha-icon></button>
         <button id="toggle-card-view" class="toolbar-icon-button" title="List view" aria-label="List view"><ha-icon icon="mdi:view-list"></ha-icon></button>
         <button id="add-card" class="toolbar-icon-button" title="Add item"><ha-icon icon="mdi:plus"></ha-icon></button>
+      </div>
+      <div class="filter-panel" hidden>
+        <div class="filter-group owner-filter" aria-label="Owner filter">
+          <button class="filter-chip active" id="owner-all" type="button">All</button>
+          <button class="filter-chip" id="owner-own" type="button">Mine</button>
+          <button class="filter-chip" id="owner-others" type="button">Others</button>
+        </div>
+        <div class="filter-group type-filter" aria-label="Type filter">
+          <button class="filter-chip active" id="type-all" type="button">Both</button>
+          <button class="filter-chip" id="type-loyalty" type="button">Cards</button>
+          <button class="filter-chip" id="type-voucher" type="button">Vouchers</button>
+        </div>
       </div>
     `;
 
@@ -205,22 +210,25 @@ class WalletAssistantCard extends HTMLElement {
         this.render();
       });
 
+    this.toolbarContainer.querySelector("#toggle-filters")
+      ?.addEventListener("click", () => {
+        this.filtersEnabled = !this.filtersEnabled;
+        this.render();
+      });
+
     this.toolbarContainer.querySelector("#toggle-card-view")
       ?.addEventListener("click", () => {
         this.cardViewMode = this.cardViewMode === "list" ? "grid" : "list";
         this.render();
       });
 
-    this.toolbarContainer.querySelector("#tab-own")
-      ?.addEventListener("click", () => {
-        this.activeTab = "own";
-        this.render();
-      });
-    this.toolbarContainer.querySelector("#tab-others")
-      ?.addEventListener("click", () => {
-        this.activeTab = "others";
-        this.render();
-      });
+    ["all", "own", "others"].forEach(owner => {
+      this.toolbarContainer.querySelector(`#owner-${owner}`)
+        ?.addEventListener("click", () => {
+          this.activeOwner = owner;
+          this.render();
+        });
+    });
 
     ["all", "loyalty", "voucher"].forEach(type => {
       this.toolbarContainer.querySelector(`#type-${type}`)
@@ -525,11 +533,18 @@ class WalletAssistantCard extends HTMLElement {
     const previousSelectionStart = previousFocusedElement?.selectionStart;
     const previousSelectionEnd = previousFocusedElement?.selectionEnd;
 
-    const cards = this.activeTab === "own" ? this.ownCards : this.otherCards;
+    const allCards = [...(this.ownCards || []), ...(this.otherCards || [])];
+    const ownerCards = this.filtersEnabled && this.activeOwner !== "all"
+      ? allCards.filter(card =>
+          this.activeOwner === "own"
+            ? card.user_id === this._hass.user.id
+            : card.user_id !== this._hass.user.id
+        )
+      : allCards;
     const filter = (this.filterText || "").trim().toLowerCase();
-    const typedCards = this.activeType === "all"
-      ? cards
-      : cards.filter(card => getItemType(card) === this.activeType);
+    const typedCards = !this.filtersEnabled || this.activeType === "all"
+      ? ownerCards
+      : ownerCards.filter(card => getItemType(card) === this.activeType);
     const filteredCards = filter
       ? typedCards.filter(card =>
           card.name.toLowerCase().includes(filter) ||
@@ -538,22 +553,32 @@ class WalletAssistantCard extends HTMLElement {
         )
       : typedCards;
     const sortedCards = [...filteredCards].sort(
-      this.activeType === "voucher" ? compareItemsByExpiryThenName : compareItemsByName
+      this.filtersEnabled && this.activeType === "voucher" ? compareItemsByExpiryThenName : compareItemsByName
     );
 
     const filterInput = this.toolbarContainer.querySelector("#filter");
+    const toggleFiltersButton = this.toolbarContainer.querySelector("#toggle-filters");
     const toggleViewButton = this.toolbarContainer.querySelector("#toggle-card-view");
-    const tabOwn = this.toolbarContainer.querySelector("#tab-own");
-    const tabOthers = this.toolbarContainer.querySelector("#tab-others");
+    const filterPanel = this.toolbarContainer.querySelector(".filter-panel");
     if (filterInput) filterInput.value = this.filterText;
+    if (toggleFiltersButton) {
+      toggleFiltersButton.classList.toggle("active", this.filtersEnabled);
+      toggleFiltersButton.title = this.filtersEnabled ? "Hide filters" : "Show filters";
+      toggleFiltersButton.setAttribute("aria-label", toggleFiltersButton.title);
+      toggleFiltersButton.setAttribute("aria-pressed", String(this.filtersEnabled));
+      toggleFiltersButton.innerHTML = `<ha-icon icon="${this.filtersEnabled ? "mdi:filter" : "mdi:filter-outline"}"></ha-icon>`;
+    }
     if (toggleViewButton) {
       const isGridView = this.cardViewMode === "grid";
       toggleViewButton.title = isGridView ? "List view" : "Grid view";
       toggleViewButton.setAttribute("aria-label", toggleViewButton.title);
       toggleViewButton.innerHTML = `<ha-icon icon="${isGridView ? "mdi:view-list" : "mdi:view-grid"}"></ha-icon>`;
     }
-    if (tabOwn) tabOwn.classList.toggle("active", this.activeTab === "own");
-    if (tabOthers) tabOthers.classList.toggle("active", this.activeTab === "others");
+    if (filterPanel) filterPanel.hidden = !this.filtersEnabled;
+    ["all", "own", "others"].forEach(owner => {
+      this.toolbarContainer.querySelector(`#owner-${owner}`)
+        ?.classList.toggle("active", this.activeOwner === owner);
+    });
     ["all", "loyalty", "voucher"].forEach(type => {
       this.toolbarContainer.querySelector(`#type-${type}`)
         ?.classList.toggle("active", this.activeType === type);
@@ -582,7 +607,7 @@ class WalletAssistantCard extends HTMLElement {
               <small class="item-meta">
                 <span>${escapeHtml(typeLabel)}</span>
                 ${expiry ? `<span class="expiry"><ha-icon icon="mdi:calendar-clock"></ha-icon>${escapeHtml(expiry)}</span>` : ""}
-                ${this.activeTab === "others" ? `<span><ha-icon icon="mdi:account"></ha-icon>${escapeHtml(card.owner)}</span>` : ""}
+                ${card.user_id !== this._hass.user.id ? `<span><ha-icon icon="mdi:account"></ha-icon>${escapeHtml(card.owner)}</span>` : ""}
               </small>
             </div>
           </div>
