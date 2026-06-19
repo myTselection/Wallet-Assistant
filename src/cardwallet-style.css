@@ -1,0 +1,355 @@
+.tabs {
+	display: flex;
+	justify-content: space-around;
+	margin-top: 8px;
+}
+
+.tab {
+	flex: 1;
+	padding: 0.5em;
+	text-align: center;
+	cursor: pointer;
+	background: #333;
+	color: #fff;
+}
+
+.toolbar {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+}
+
+.action-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 0.75em;
+}
+
+.filter-input {
+	flex: 1;
+	min-width: 0;
+	padding: 8px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	background: #fff;
+	color: #111;
+	min-height: 40px;
+	box-sizing: border-box;
+}
+
+button {
+	min-height: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	border: none;
+	border-radius: 6px;
+	background: #444;
+	color: white;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1;
+	box-sizing: border-box;
+}
+
+button:hover {
+	background: #555;
+}
+
+button ha-icon {
+	margin-right: 0;
+}
+
+.toolbar button {
+	flex: 0 0 auto;
+	padding: 0;
+}
+
+.toolbar .toolbar-icon-button {
+	width: 40px;
+	min-width: 40px;
+	height: 40px;
+}
+
+.tab.active {
+	background: #555;
+	font-weight: bold;
+}
+
+.cardlist {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.cardlist.grid-view {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0.5em;
+	border: 1px solid #ccc;
+	cursor: pointer;
+	min-height: 3.5em;
+}
+
+.grid-view .card {
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	min-height: 0;
+	padding: 6px 4px;
+}
+
+.card-logo-wrap {
+	flex: 0 0 40px;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.card-logo,
+.card-logo-placeholder {
+	width: 36px;
+	height: 36px;
+	border-radius: 6px;
+}
+
+.card-logo {
+	object-fit: contain;
+	background: #fff;
+	border: 1px solid #ddd;
+}
+
+.card-logo-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #444;
+	color: #fff;
+	font-weight: 700;
+	font-size: 0.9em;
+}
+
+.grid-view .card-logo-wrap {
+	flex: 0 0 44px;
+	width: 44px;
+	height: 44px;
+}
+
+.grid-view .card-logo,
+.grid-view .card-logo-placeholder {
+	width: 42px;
+	height: 42px;
+}
+
+.card-details {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.card-details strong,
+.card-details small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.grid-view .card-details {
+	flex: 0 1 auto;
+	width: 100%;
+	align-items: center;
+	gap: 0;
+}
+
+.grid-view .card-details strong {
+	max-width: 100%;
+	font-size: 0.68em;
+	font-weight: 600;
+	line-height: 1.1;
+	text-align: center;
+}
+
+.grid-view .card-details small {
+	display: none;
+}
+
+.card small {
+	font-size: 0.85em;
+	color: #bbb;
+}
+
+.popup {
+	position: fixed;
+	top: 10%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: white;
+	padding: 1em;
+	border: 2px solid #ccc;
+	z-index: 1000;
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.popup-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-right: 28px;
+}
+
+.popup-logo-wrap {
+	flex: 0 0 48px;
+	width: 48px;
+	height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.popup-logo,
+.popup-logo-placeholder {
+	width: 44px;
+	height: 44px;
+}
+
+.card-title {
+	font-weight: bold;
+	font-size: 1.5em;
+	color: black;
+	margin: 0;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.popup .code {
+	margin-top: 12px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.popup .code canvas {
+	max-width: 90vw;
+	height: auto;
+}
+
+.button-group {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 10px;
+	margin-top: 1em;
+}
+
+.button-group button {
+	min-height: 40px;
+	background: #555;
+	padding: 0 12px;
+	font-size: 0.95em;
+}
+
+.button-group button:hover {
+	background: #444;
+}
+
+ha-icon {
+	vertical-align: middle;
+	margin-right: 4px;
+}
+
+.no-results {
+	padding: 1em;
+	text-align: center;
+	color: #777;
+}
+
+.dialog-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.dialog-content {
+	background: #fff;
+	padding: 1.2em;
+	border-radius: 10px;
+	max-width: 360px;
+	width: 100%;
+	box-sizing: border-box;
+	box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+}
+
+.popup-form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.8em;
+}
+
+.popup-form input {
+	width: 100%;
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	box-sizing: border-box;
+}
+
+.btn-row {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 8px;
+}
+
+.btn-row button {
+	min-height: 40px;
+	padding: 0 12px;
+}
+
+.btn-row button:hover {
+	background: #555;
+}
+
+.btn-row button#cancel-add-btn {
+	background: #999;
+}
+
+.btn-row button#cancel-add-btn:hover {
+	background: #777;
+}
+
+.close-btn {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	cursor: pointer;
+	--mdc-icon-size: 24px;
+	color: #888;
+	transition: color 0.2s;
+}
+
+.close-btn:hover {
+	color: #e00;
+}
