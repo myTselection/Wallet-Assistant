@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from ..const import DEFAULT_BARCODE_FORMAT, ITEM_TYPES, TYPE_LOYALTY
+from ..const import (
+    DEFAULT_BARCODE_FORMAT,
+    DEFAULT_VIEW,
+    DEFAULT_VIEWS,
+    ITEM_TYPES,
+    TYPE_LOYALTY,
+)
 
 
 @dataclass
@@ -13,6 +19,7 @@ class WalletItem:
     user_id: str
     item_type: str = TYPE_LOYALTY
     format: Optional[str] = DEFAULT_BARCODE_FORMAT
+    default_view: str = DEFAULT_VIEW
     logo_slug: Optional[str] = None
     expires_on: Optional[str] = None
     notes: Optional[str] = None
@@ -24,6 +31,10 @@ class WalletItem:
         if item_type not in ITEM_TYPES:
             item_type = TYPE_LOYALTY
 
+        default_view = data.get("default_view") or DEFAULT_VIEW
+        if default_view not in DEFAULT_VIEWS:
+            default_view = DEFAULT_VIEW
+
         return cls(
             item_id=data.get("item_id"),
             name=data.get("name", ""),
@@ -32,6 +43,7 @@ class WalletItem:
             user_id=data.get("user_id", ""),
             item_type=item_type,
             format=data.get("format") or DEFAULT_BARCODE_FORMAT,
+            default_view=default_view,
             logo_slug=data.get("logo_slug") or None,
             expires_on=data.get("expires_on") or data.get("expiry_date") or None,
             notes=data.get("notes") or None,
@@ -47,6 +59,7 @@ class WalletItem:
             "user_id": self.user_id,
             "item_type": self.item_type,
             "format": self.format or DEFAULT_BARCODE_FORMAT,
+            "default_view": self.default_view or DEFAULT_VIEW,
             "logo_slug": self.logo_slug,
             "expires_on": self.expires_on,
             "notes": self.notes,

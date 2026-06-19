@@ -1,7 +1,7 @@
 {
   "domain": "wallet_assistant",
   "name": "Wallet Assistant",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "documentation": "https://github.com/myTselection/Wallet-Assistant",
   "issue_tracker": "https://github.com/myTselection/Wallet-Assistant/issues",
   "dependencies": [],

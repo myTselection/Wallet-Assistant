@@ -14,6 +14,8 @@ const TYPE_LABELS = {
   promotion: "Promo"
 };
 const CARD_TYPE = "wallet-assistant-card";
+const DEFAULT_VIEW = "barcode";
+const CODE_VIEWS = new Set([DEFAULT_VIEW, "qr"]);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
@@ -66,6 +68,10 @@ function getTypeLabel(item) {
   return TYPE_LABELS[getItemType(item)] || "Item";
 }
 
+function normalizeDefaultView(value) {
+  return CODE_VIEWS.has(value) ? value : DEFAULT_VIEW;
+}
+
 function formatExpiry(value) {
   if (!value) return "";
   const date = new Date(`${value}T00:00:00`);
@@ -79,6 +85,7 @@ function normalizeItem(item) {
     item_id: getItemId(item),
     item_type: getItemType(item),
     format: item.format || "CODE128",
+    default_view: normalizeDefaultView(item.default_view),
     code: item.code || "",
     expires_on: item.expires_on || ""
   };
@@ -238,15 +245,44 @@ class WalletAssistantCard extends HTMLElement {
     this.render();
   }
 
-  toggleCodeType(cardId) {
-    this.viewModes[cardId] = this.viewModes[cardId] === "barcode" ? "qr" : "barcode";
+  async toggleCodeType(cardId) {
+    const card = this.selectedCard || [...this.ownCards, ...this.otherCards].find(c => getItemId(c) === cardId);
+    const nextView = (this.viewModes[cardId] || card?.default_view || DEFAULT_VIEW) === "barcode" ? "qr" : "barcode";
+    this.viewModes[cardId] = nextView;
+
+    if (card) {
+      const updatedCard = normalizeItem({ ...card, default_view: nextView });
+      this.ownCards = this.ownCards.map(c => getItemId(c) === cardId ? normalizeItem({ ...c, default_view: nextView }) : c);
+      this.otherCards = this.otherCards.map(c => getItemId(c) === cardId ? normalizeItem({ ...c, default_view: nextView }) : c);
+      if (this.selectedCard && getItemId(this.selectedCard) === cardId) {
+        this.selectedCard = updatedCard;
+      }
+    }
+
     this.render();
+
+    if (!card || card.user_id !== this._hass.user.id) {
+      return;
+    }
+
+    try {
+      const saved = await this._hass.callApi("put", `${API_PATH}/${cardId}`, {
+        default_view: nextView
+      });
+      const savedCard = normalizeItem({ ...card, ...(saved || {}), default_view: nextView });
+      this.ownCards = this.ownCards.map(c => getItemId(c) === cardId ? normalizeItem({ ...c, ...savedCard }) : c);
+      if (this.selectedCard && getItemId(this.selectedCard) === cardId) {
+        this.selectedCard = normalizeItem({ ...this.selectedCard, ...savedCard });
+      }
+    } catch (error) {
+      console.error("Unable to save Wallet Assistant default view:", error);
+    }
   }
 
   openCard(cardId) {
     this.selectedCard = [...this.ownCards, ...this.otherCards].find(c => getItemId(c) === cardId);
-    if (!this.viewModes[cardId]) {
-      this.viewModes[cardId] = localStorage.getItem(`wallet-assistant-mode-${cardId}`) || "barcode";
+    if (this.selectedCard && !this.viewModes[cardId]) {
+      this.viewModes[cardId] = this.selectedCard.default_view;
     }
     this.render();
   }
@@ -277,7 +313,8 @@ class WalletAssistantCard extends HTMLElement {
       user_id: this._hass.user.id,
       item_type: itemType,
       expires_on: itemType === "voucher" ? expiresOn : "",
-      format: "CODE128" // default for new cards
+      format: "CODE128", // default for new cards
+      default_view: DEFAULT_VIEW
     });
 
     this._inputState = { name: "", code: "", logo_slug: "", item_type: "loyalty", expires_on: "" };
@@ -601,8 +638,7 @@ class WalletAssistantCard extends HTMLElement {
 
     if (this.selectedCard) {
       const selectedId = getItemId(this.selectedCard);
-      const mode = this.viewModes[selectedId] || "barcode";
-      localStorage.setItem(`wallet-assistant-mode-${selectedId}`, mode);
+      const mode = normalizeDefaultView(this.viewModes[selectedId] || this.selectedCard.default_view);
       const container = this.dynamicContainer.querySelector("#code-preview");
       container.innerHTML = "";
 

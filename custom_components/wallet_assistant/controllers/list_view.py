@@ -7,6 +7,7 @@ from homeassistant.components.http import HomeAssistantView
 from ..const import (
     API_BASE,
     DEFAULT_BARCODE_FORMAT,
+    DEFAULT_VIEW,
     ITEM_TYPES,
     TYPE_LOYALTY,
 )
@@ -47,6 +48,7 @@ class WalletAssistantListAPI(HomeAssistantView):
                 "user_id": user.id,
                 "item_type": item_type,
                 "format": data.get("format") or DEFAULT_BARCODE_FORMAT,
+                "default_view": data.get("default_view") or DEFAULT_VIEW,
                 "logo_slug": _clean_optional_string(data.get("logo_slug")),
                 "expires_on": _clean_optional_string(data.get("expires_on")),
                 "notes": _clean_optional_string(data.get("notes")),
