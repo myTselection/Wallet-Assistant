@@ -13,6 +13,18 @@ const TYPE_LABELS = {
   voucher: "Voucher",
   promotion: "Promo"
 };
+const CARD_TYPE = "wallet-assistant-card";
+
+window.customCards = window.customCards || [];
+if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
+  window.customCards.push({
+    type: CARD_TYPE,
+    name: "Wallet Assistant",
+    description: "Manage loyalty cards, vouchers, and promotions.",
+    preview: false,
+    documentationURL: "https://github.com/myTselection/Wallet-Assistant",
+  });
+}
 
 function sanitizeCode(value, fmt) {
   let s = String(value ?? "")
@@ -190,6 +202,10 @@ class WalletAssistantCard extends HTMLElement {
 
   setConfig(config) {
     this._config = config;
+  }
+
+  static getStubConfig() {
+    return {};
   }
 
   set hass(hass) {
@@ -632,4 +648,4 @@ class WalletAssistantCard extends HTMLElement {
   }
 }
 
-customElements.define("wallet-assistant-card", WalletAssistantCard);
+customElements.define(CARD_TYPE, WalletAssistantCard);
