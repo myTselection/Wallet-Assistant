@@ -191,7 +191,7 @@ class WalletAssistantCard extends HTMLElement {
           <button class="filter-chip" id="owner-others" type="button">Others</button>
         </div>
         <div class="filter-group type-filter" aria-label="Type filter">
-          <button class="filter-chip active" id="type-all" type="button">Both</button>
+          <button class="filter-chip active" id="type-all" type="button">All</button>
           <button class="filter-chip" id="type-loyalty" type="button">Cards</button>
           <button class="filter-chip" id="type-voucher" type="button">Vouchers</button>
         </div>
