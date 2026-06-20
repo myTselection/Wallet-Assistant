@@ -20,6 +20,43 @@ const CODE_VIEWS = new Set([DEFAULT_VIEW, "qr"]);
 const DEFAULT_CARD_VIEW_MODE = "grid";
 const CARD_VIEW_MODES = new Set([DEFAULT_CARD_VIEW_MODE, "list"]);
 const CARD_LOAD_RETRY_MS = 30_000;
+const DEFAULT_PRICE_WATCH_SERVICES = [
+  {
+    name: "Google Shopping",
+    url_template: "https://www.google.com/search?tbm=shop&q={query}",
+    enabled: true
+  },
+  {
+    name: "Hagglezon",
+    url_template: "https://www.hagglezon.com/en/s/{query}",
+    enabled: true
+  },
+  {
+    name: "Tweakers Pricewatch",
+    url_template: "https://tweakers.net/pricewatch/zoeken/?keyword={query}",
+    enabled: true
+  },
+  {
+    name: "MaxSpar",
+    url_template: "https://nl.maxspar.de/suche/?q={query}",
+    enabled: true
+  },
+  {
+    name: "Idealo France",
+    url_template: "https://www.idealo.fr/resultats.html?q={query}",
+    enabled: true
+  },
+  {
+    name: "Geizhals",
+    url_template: "https://geizhals.eu/?fs={query}",
+    enabled: true
+  },
+  {
+    name: "Kieskeurig",
+    url_template: "https://www.kieskeurig.be/zoeken/index.html?q={query}",
+    enabled: true
+  }
+];
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((card) => card.type === CARD_TYPE)) {
@@ -96,6 +133,27 @@ function normalizeDefaultView(value) {
 
 function normalizeCardViewMode(value) {
   return CARD_VIEW_MODES.has(value) ? value : DEFAULT_CARD_VIEW_MODE;
+}
+
+function normalizePriceWatchServices(value) {
+  const services = Array.isArray(value) ? value : DEFAULT_PRICE_WATCH_SERVICES;
+  const normalized = services
+    .filter(service => service && service.enabled !== false)
+    .map(service => ({
+      name: String(service.name || "").trim(),
+      url_template: String(service.url_template || service.urlTemplate || service.url || "").trim()
+    }))
+    .filter(service =>
+      service.name &&
+      service.url_template.includes("{query}") &&
+      /^https?:\/\//i.test(service.url_template)
+    );
+
+  return normalized;
+}
+
+function getPriceWatchUrl(service, query) {
+  return service.url_template.split("{query}").join(encodeURIComponent(query));
 }
 
 function formatExpiry(value) {
@@ -203,6 +261,9 @@ class WalletAssistantCard extends HTMLElement {
     this.filterText = "";
     this.showAddDialog = false;
     this.cardViewMode = DEFAULT_CARD_VIEW_MODE;
+    this.priceWatchServices = normalizePriceWatchServices();
+    this._settingsLoaded = false;
+    this._settingsLoadPromise = null;
     this._cardsLoaded = false;
     this._cardsLoadPromise = null;
     this._lastCardsLoadAttempt = 0;
@@ -300,9 +361,38 @@ class WalletAssistantCard extends HTMLElement {
     const previousUserId = this._hass?.user?.id;
     this._hass = hass;
     if (previousUserId !== hass?.user?.id) {
+      this.loadSettings({ force: true });
       this.loadCards({ force: true });
     } else if (!this._cardsLoaded) {
+      this.loadSettings();
       this.loadCards();
+    } else if (!this._settingsLoaded) {
+      this.loadSettings();
+    }
+  }
+
+  async loadSettings({ force = false } = {}) {
+    if (!this._hass) return;
+    if (this._settingsLoadPromise) return this._settingsLoadPromise;
+    if (!force && this._settingsLoaded) return;
+
+    this._settingsLoadPromise = (async () => {
+      try {
+        const settings = await this._hass.callApi("get", `${API_PATH}/settings`);
+        this.priceWatchServices = normalizePriceWatchServices(settings?.price_watch_services);
+      } catch (error) {
+        console.warn("Unable to load Wallet Assistant settings; using default price-watch services.", error);
+        this.priceWatchServices = normalizePriceWatchServices();
+      } finally {
+        this._settingsLoaded = true;
+        this.render();
+      }
+    })();
+
+    try {
+      return await this._settingsLoadPromise;
+    } finally {
+      this._settingsLoadPromise = null;
     }
   }
 
@@ -730,6 +820,10 @@ class WalletAssistantCard extends HTMLElement {
     const selectedInitial = this.selectedCard ? getCardInitial(this.selectedCard.name) : "";
     const selectedExpiry = this.selectedCard?.expires_on ? formatExpiry(this.selectedCard.expires_on) : "";
     const selectedNotes = this.selectedCard?.notes || "";
+    const priceWatchQuery = (this.filterText || "").trim();
+    const priceWatchServices = priceWatchQuery.length > 3
+      ? normalizePriceWatchServices(this.priceWatchServices)
+      : [];
 
     this.dynamicContainer.innerHTML = `
       <div class="cardlist ${this.cardViewMode === "grid" ? "grid-view" : "list-view"}">
@@ -757,6 +851,25 @@ class WalletAssistantCard extends HTMLElement {
         `;
         }).join("") : `<div class="no-results">No matching items</div>`}
       </div>
+      ${priceWatchServices.length ? `
+        <section class="price-watch-section" aria-label="Price-watch searches">
+          <h3>Price watch "${escapeHtml(priceWatchQuery)}"</h3>
+          <div class="price-watch-actions">
+            ${priceWatchServices.map(service => `
+              <a
+                class="price-watch-link"
+                href="${escapeHtml(getPriceWatchUrl(service, priceWatchQuery))}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Search ${escapeHtml(priceWatchQuery)} on ${escapeHtml(service.name)}"
+              >
+                <ha-icon icon="mdi:open-in-new"></ha-icon>
+                <span>${escapeHtml(service.name)}</span>
+              </a>
+            `).join("")}
+          </div>
+        </section>
+      ` : ""}
       ${this.selectedCard ? `
         <div class="popup-overlay" id="details-overlay">
           <div class="popup">

@@ -34,6 +34,7 @@ So I started with the Card Wallet code and extended it.
 * Support loyalty cards, linked to Home Assistant users
   * User-friendly default grid view, can be switched to list view
   * Easy direct filtering while typing to quickly retrieve the needed card
+  * Search the current filter text in configurable price-watch services once more than 3 characters are typed
   * Easily add a logo by typing the base URL of the company and retrieve image using [logo.dev](https://logo.dev)
   * Easily add barcode code by scanning with camera
   * Simple storage in a JSON file within the Home Assistant folder
@@ -64,6 +65,19 @@ type: custom:wallet-assistant-card
 ## Storage
 
 Wallet Assistant stores items in `wallet_assistant_items.json` in the Home Assistant config folder.
+
+## Price-Watch Searches
+
+When the dashboard filter contains more than 3 characters, Wallet Assistant shows quick links below the filtered items for external product and price-watch searches.
+
+The default services are Google Shopping, Hagglezon, Tweakers Pricewatch, MaxSpar, Idealo France, Geizhals, and Kieskeurig. To customize them, open **Settings > Devices & services > Wallet Assistant > Configure** and edit one service per line:
+
+```text
+Service name|https://example.com/search?q={query}
+# Disabled service|https://example.com/search?q={query}
+```
+
+`{query}` is replaced with the current filter text.
 
 ## Dashboard Resource
 

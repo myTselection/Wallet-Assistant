@@ -9,5 +9,19 @@
     "abort": {
       "already_configured": "Wallet Assistant is already configured."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Wallet Assistant options",
+        "description": "Configure price-watch search services. Use one service per line as Name|URL, and include {query} where the filter text should be inserted. Prefix a line with # to disable it.",
+        "data": {
+          "price_watch_services": "Price-watch services"
+        }
+      }
+    },
+    "error": {
+      "invalid_price_watch_services": "Each enabled or disabled service line must be Name|https://example.com/search?q={query}."
+    }
   }
 }

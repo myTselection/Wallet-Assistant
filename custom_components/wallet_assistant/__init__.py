@@ -26,6 +26,7 @@ except ImportError:
 from .api import (
     WalletAssistantItemAPI,
     WalletAssistantListAPI,
+    WalletAssistantSettingsAPI,
 )
 from .const import DOMAIN, FRONTEND_PATH, PLATFORMS, VERSION
 from .services.storage import WalletStorage
@@ -63,6 +64,7 @@ async def _async_setup_once(hass: HomeAssistant) -> None:
     await _async_register_lovelace_resource(hass)
 
     hass.http.register_view(WalletAssistantListAPI(hass))
+    hass.http.register_view(WalletAssistantSettingsAPI(hass))
     hass.http.register_view(WalletAssistantItemAPI(hass))
 
     hass.data[DOMAIN]["setup_complete"] = True
