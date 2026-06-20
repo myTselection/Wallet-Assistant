@@ -34,7 +34,7 @@ DEFAULT_EXPIRY_WARNING_DAYS = 14
 
 DEFAULT_PRICE_WATCH_SERVICES = (
     {
-        "name": "Google Shopping",
+        "name": "Google Shop",
         "url_template": "https://www.google.com/search?tbm=shop&q={query}",
         "enabled": True,
     },
@@ -44,7 +44,7 @@ DEFAULT_PRICE_WATCH_SERVICES = (
         "enabled": True,
     },
     {
-        "name": "Tweakers Pricewatch",
+        "name": "Tweakers",
         "url_template": "https://tweakers.net/pricewatch/zoeken/?keyword={query}",
         "enabled": True,
     },
@@ -54,7 +54,7 @@ DEFAULT_PRICE_WATCH_SERVICES = (
         "enabled": True,
     },
     {
-        "name": "Idealo France",
+        "name": "Idealo",
         "url_template": "https://www.idealo.fr/prechcat.html?q={query}",
         "enabled": True,
     },
