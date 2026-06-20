@@ -21,7 +21,7 @@
       }
     },
     "error": {
-      "invalid_price_watch_services": "Each enabled or disabled service line must be Name|https://example.com/search?q={query}."
+      "invalid_price_watch_services": "Each enabled or disabled service line must use the documented service format and include the query placeholder."
     }
   }
 }
