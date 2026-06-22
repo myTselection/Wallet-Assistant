@@ -39,17 +39,17 @@ DEFAULT_PRICE_WATCH_SERVICES = (
         "enabled": True,
     },
     {
-        "name": "Hagglezon",
-        "url_template": "https://www.hagglezon.com/en/s/{query}",
-        "enabled": True,
-    },
-    {
-        "name": "Tweakers",
+        "name": "Tweakers Tech",
         "url_template": "https://tweakers.net/pricewatch/zoeken/?keyword={query}",
         "enabled": True,
     },
     {
-        "name": "MaxSpar",
+        "name": "Hagglezon Amazon EU",
+        "url_template": "https://www.hagglezon.com/en/s/{query}",
+        "enabled": True,
+    },
+    {
+        "name": "MaxSpar Amazon EU",
         "url_template": "https://fr.maxspar.de/s/{query}",
         "enabled": True,
     },
@@ -71,6 +71,11 @@ DEFAULT_PRICE_WATCH_SERVICES = (
     {
         "name": "Pepper",
         "url_template": "https://nl.pepper.com/search?q={query}",
+        "enabled": True,
+    },
+    {
+        "name": "PromoButler",
+        "url_template": "https://www.promobutler.be/nl/zoeken?query={query}",
         "enabled": True,
     },
 )
