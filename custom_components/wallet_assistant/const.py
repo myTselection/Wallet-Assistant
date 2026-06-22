@@ -68,6 +68,11 @@ DEFAULT_PRICE_WATCH_SERVICES = (
         "url_template": "https://www.kieskeurig.be/search?q={query}",
         "enabled": True,
     },
+    {
+        "name": "Pepper",
+        "url_template": "https://nl.pepper.com/search?q={query}",
+        "enabled": True,
+    },
 )
 
 
